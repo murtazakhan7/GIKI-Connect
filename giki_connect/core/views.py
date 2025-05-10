@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+from django.shortcuts import render,redirect
 urlpatterns = [
     # Group URLs
     path('create/group/', views.create_group, name='create_group'),
@@ -17,4 +17,3 @@ urlpatterns = [
     path('events/', views.event_list, name='event_list'),
     path('event/<int:event_id>/rsvp/', views.rsvp_event, name='rsvp_event'),
 ]
-
