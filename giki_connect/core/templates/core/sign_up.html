@@ -1,0 +1,58 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/sign_up.css' %}">
+{% endblock %}
+
+{% block body %}
+<div>
+    <h1>Welcome to GIKI-Connect</h1>
+</div>
+<div>
+    <img src="{% static 'media/bg.jpeg' %}" alt="404">
+</div>
+<h2>Sign Up</h2>
+<form action="./submit" method="post">
+    {% csrf_token %}
+    <div>
+        <label for="email"><strong>Email</strong></label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" autofocus required>
+    </div>
+    <div>
+        <label for="name"><strong>Name</strong></label>
+        <input type="text" id="name" name="name" placeholder="Enter your name" required>
+    </div>
+    <div>
+        <label for="password"><strong>Password</strong></label>
+        <input type="password" id="password" name="password" placeholder="Password" required>
+    </div>
+    <div>
+        <label for="confirm_pass"><strong>Confirm Password</strong></label>
+        <input type="password" name="confirm_password" id="confirm_pass" placeholder="Confirm Password" required>
+    </div>
+    <div>
+        <label><strong>Gender</strong></label>
+        <br>
+        <label>Male</label>
+        <input type="radio" name="gender" value="Male">
+        <label>Female</label>
+        <input type="radio" name="gender" value="Female">
+        <label>Other</label>
+        <input type="radio" name="gender" value="Other">
+    </div>
+    <div>
+        <label for="country"><strong>Select your Country</strong></label>
+        <input id="country" list="countries" name="country">
+        <datalist id="countries">
+            <option value="India">+91</option>
+            <option value="Pakistan">+92</option>
+            <option value="China"></option>
+            <option value="Other"></option>
+        </datalist>
+    </div>
+    <div>
+        <input type="submit" value="Submit">
+    </div>
+</form>
+{% endblock %}
