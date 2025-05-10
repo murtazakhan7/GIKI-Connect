@@ -19,14 +19,16 @@ class SignUpView(APIView):
 
         if user_serializer.is_valid():
             user = user_serializer.save()
-
             if role == 'Student':
                 student_data = request.data.get('student', {})
                 student_data['user'] = user.user_id
                 student_serializer = StudentSerializer(data=student_data)
+                ##############
                 if student_serializer.is_valid():
                     student_serializer.save()
+                ##############
                 else:
+                    print(student_serializer.errors)
                     user.delete()
                     return Response(student_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -36,6 +38,7 @@ class SignUpView(APIView):
                 alumnus_serializer = AlumnusSerializer(data=alumnus_data)
                 if alumnus_serializer.is_valid():
                     alumnus_serializer.save()
+                ##############
                 else:
                     user.delete()
                     return Response(alumnus_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -50,7 +53,7 @@ class CreateProfileView(APIView):
         try:
             user = User.objects.get(user_id=user_id)
             data = request.data.copy()
-            data['user'] = user.user_id
+            data['user'] = user_id
             serializer = ProfileSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()

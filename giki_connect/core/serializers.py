@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     User, Student, Alumnus, Profile, Message,
     Notification, ConnectionRequest, JobPost, MentorshipMatch,
-    Group, GroupMember, Post, Comment, Event, EventAttendee )
+    Group, GroupMember, Post, Comment, Event, EventAttendee)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = Student
@@ -20,7 +20,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class AlumnusSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = Alumnus
@@ -28,7 +28,7 @@ class AlumnusSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = Profile
@@ -36,8 +36,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
-    receiver = UserSerializer(read_only=True)
+    sender = serializers.PrimaryKeyRelatedField(read_only=True)
+    receiver = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Message
@@ -45,7 +45,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Notification
@@ -53,8 +53,8 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 
 class ConnectionRequestSerializer(serializers.ModelSerializer):
-    from_user = UserSerializer(read_only=True)
-    to_user = UserSerializer(read_only=True)
+    from_user = serializers.PrimaryKeyRelatedField(read_only=True)
+    to_user = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = ConnectionRequest
@@ -62,7 +62,7 @@ class ConnectionRequestSerializer(serializers.ModelSerializer):
 
 
 class JobPostSerializer(serializers.ModelSerializer):
-    poster = AlumnusSerializer(read_only=True)
+    poster = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = JobPost
@@ -70,11 +70,12 @@ class JobPostSerializer(serializers.ModelSerializer):
 
 
 class MentorshipMatchSerializer(serializers.ModelSerializer):
-    mentor = AlumnusSerializer(read_only=True)
-    mentee = StudentSerializer(read_only=True)
+    mentor = serializers.PrimaryKeyRelatedField(read_only=True)
+    mentee = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = MentorshipMatch
+        fields = '__all__'
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -82,25 +83,30 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = '__all__'
 
+
 class GroupMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupMember
         fields = '__all__'
+
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = '__all__'
 
+
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
 
+
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = '__all__'
+
 
 class EventAttendeeSerializer(serializers.ModelSerializer):
     class Meta:

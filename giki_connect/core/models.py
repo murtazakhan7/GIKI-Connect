@@ -12,9 +12,8 @@ class User(models.Model):
     user_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     mail = models.EmailField(unique=True)
-    password_hash = models.CharField(max_length=128)  # store hashed password
+    password_hash = models.CharField(max_length=128)  
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-    is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -41,17 +40,6 @@ class Profile(models.Model):
     def __str__(self):
         return f"Profile of {self.user.name}"
 
-
-class Message(models.Model):
-    message_id = models.AutoField(primary_key=True)
-    sender = models.ForeignKey('User', related_name='sent_messages', on_delete=models.CASCADE)
-    receiver = models.ForeignKey('User', related_name='received_messages', on_delete=models.CASCADE, null=True, blank=True)
-    group = models.ForeignKey('Group', on_delete=models.CASCADE, null=True, blank=True)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"From {self.sender.name} to {self.receiver.name if self.receiver else 'Group'} at {self.timestamp}"
 
 class Notification(models.Model):
     TYPE_CHOICES = [
