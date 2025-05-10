@@ -1,8 +1,22 @@
 from django.urls import path
+from .views import (
+    SignUpView,
+    CreateProfileView,
+    UpdateProfileView,
+    GetProfileView
+)
+from django.urls import path
 from . import views
 
+
+
 urlpatterns = [
-    # Group URLs
+    path('signup/', SignUpView.as_view(), name='signup'),
+
+    # Profile endpoints (based on profile_id)
+    path('users/<int:user_id>/profiles/create/', CreateProfileView.as_view(), name='create-profile'),
+    path('profiles/<int:profile_id>/update/', UpdateProfileView.as_view(), name='update-profile'),
+    path('profiles/<int:profile_id>/', GetProfileView.as_view(), name='get-profile'),
     path('create/group/', views.create_group, name='create_group'),
     path('groups/', views.group_list, name='group_list'),
 
@@ -16,4 +30,8 @@ urlpatterns = [
     path('create/event/', views.create_event, name='create_event'),
     path('events/', views.event_list, name='event_list'),
     path('event/<int:event_id>/rsvp/', views.rsvp_event, name='rsvp_event'),
+    path('users/<int:user_id>/profile/create/', CreateProfileView.as_view(), name='create-profile'),
+    path('users/<int:user_id>/profile/update/', UpdateProfileView.as_view(), name='update-profile'),
+    path('users/<int:user_id>/profile/', GetProfileView.as_view(), name='get-profile'),
 ]
+

@@ -1,9 +1,60 @@
 # models.py
 from django.db import models
-from django.contrib.auth.models import User
+
+from django.utils import timezone
 import uuid
 
+class User(models.Model):
+    ROLE_CHOICES = [
+        ('Student', 'Student'),
+        ('Alumnus', 'Alumnus'),
+    ]
+
+    user_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    mail = models.EmailField(unique=True)
+    password_hash = models.CharField(max_length=128)  # store hashed password
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.role})"
+
+class Student(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    major = models.CharField(max_length=100)
+    graduation_year = models.IntegerField()
+
+class Alumnus(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    employer = models.CharField(max_length=100)
+    job_title = models.CharField(max_length=100)
+    mentoring_interest = models.BooleanField(default=False)
+
+class Profile(models.Model):
+    profile_id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True)
+    skills = models.JSONField(default=list)  
+    education = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Profile of {self.user.name}"
+
+
 class Group(models.Model):
+    group_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+
+class Message(models.Model):
+    message_id = models.AutoField(primary_key=True)
+    sender = models.ForeignKey('User', related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey('User', related_name='received_messages', on_delete=models.CASCADE, null=True, blank=True)
+    group = models.ForeignKey('Group', on_delete=models.CASCADE, null=True, blank=True)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     is_public = models.BooleanField(default=True)
