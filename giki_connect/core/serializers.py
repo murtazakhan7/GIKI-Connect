@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     User, Student, Alumnus, Profile, Message,
     Notification, ConnectionRequest, JobPost, MentorshipMatch,
-    Group, GroupMember, Post, Comment, Event, EventAttendee)
+    Group, GroupMember, Post, Comment, Event, EventAttendee )
 
 
 class UserSerializer(serializers.ModelSerializer):
