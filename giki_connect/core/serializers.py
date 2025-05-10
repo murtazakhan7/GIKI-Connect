@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import (
     User, Student, Alumnus, Profile, Message,
-    Notification, ConnectionRequest, JobPost, MentorshipMatch
-)
+    Notification, ConnectionRequest, JobPost, MentorshipMatch,
+    Group, GroupMember, Post, Comment, Event, EventAttendee)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -75,4 +75,34 @@ class MentorshipMatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MentorshipMatch
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = '__all__'
+
+class GroupMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupMember
+        fields = '__all__'
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = '__all__'
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'
+
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = '__all__'
+
+class EventAttendeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventAttendee
         fields = '__all__'
