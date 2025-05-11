@@ -30,6 +30,16 @@ class Alumnus(models.Model):
     job_title = models.CharField(max_length=100)
     mentoring_interest = models.BooleanField(default=False)
 
+class Connection(models.Model):
+    user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='connections_initiated')
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='connections_received')
+    connected_at = models.DateTimeField(auto_now_add=True)
+    
+class MentorshipApplication(models.Model):
+    application_id = models.AutoField(primary_key=True)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
 class Profile(models.Model):
     profile_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)

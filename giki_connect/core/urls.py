@@ -1,33 +1,56 @@
 from django.urls import path
 from .views import (
+    NotificationAPI,
+    MentorshipMatchAPI,
+    AcceptMentorshipAPI,
+    MenteesListAPI,
+    ShowMentorAPI,
+    MessageAPI,
+    JobPostAPI,
+    AllJobPostsAPI,
     SignUpView,
     CreateProfileView,
     UpdateProfileView,
-    GetProfileView
+    GetProfileView,
+    SendConnectionRequestAPI,
+    ManageConnectionRequestAPI,
+    ViewReceivedRequestsAPI,
+    ViewConnectionsAPI
 )
-from django.urls import path
-from . import views
-
-
 
 urlpatterns = [
+    # Notification endpoints
+    path('notifications/', NotificationAPI.as_view(), name='notifications_list'),
+    path('notifications/<int:user_id>/', NotificationAPI.as_view(), name='user_notifications'),
+    path('notifications/read/<int:pk>/', NotificationAPI.as_view(), name='mark_notification_read'),
+    
+    # Mentorship endpoints
+    path('mentorship/match/', MentorshipMatchAPI.as_view(), name='mentorship_match'),
+    path('mentorship/accept/<int:user_id>/', AcceptMentorshipAPI.as_view(), name='accept_mentorship'),
+    path('mentorship/mentees/', MenteesListAPI.as_view(), name='mentees_list'),
+    path('mentorship/mentor/<int:user_id>/', ShowMentorAPI.as_view(), name='show_mentor'),
+    
+    # Connection endpoints
+    path('connections/send/<int:sender_id>/<int:receiver_id>/',  SendConnectionRequestAPI.as_view(),  name='send_connection_request'),
+    path('connections/sent/<int:user_id>/', SendConnectionRequestAPI.as_view(), name='view_sent_requests'),
+    path('connections/manage/<int:request_id>/', ManageConnectionRequestAPI.as_view(), name='manage_connection_request'),
+    path('connections/received/<int:receiver_id>/', ViewReceivedRequestsAPI.as_view(), name='view_received_requests'),
+    path('connections/list/<int:user_id>/', ViewConnectionsAPI.as_view(), name='view_all_connections'),
+    
+    # Message endpoints
+    path('messages/', MessageAPI.as_view(), name='messages_list'),
+    path('messages/send/<int:sender_id>/<int:receiver_id>/', MessageAPI.as_view(), name='send_message'),
+    path('messages/received/<int:user_id>/', MessageAPI.as_view(http_method_names=['get']), {'method': 'get_received'}, name='received_messages'),
+    path('messages/sent/<int:user_id>/', MessageAPI.as_view(http_method_names=['get']), {'method': 'get_sent'}, name='sent_messages'),
+    
+    # Job post endpoints
+    path('jobs/', JobPostAPI.as_view(), name='jobs_list'),
+    path('jobs/create/<int:user_id>/', JobPostAPI.as_view(), name='create_job'),
+    path('jobs/all/', AllJobPostsAPI.as_view(), name='all_jobs'),
+    
+    # User and profile endpoints
     path('signup/', SignUpView.as_view(), name='signup'),
-
-    # Profile endpoints (based on profile_id)
-    path('users/<int:user_id>/profiles/create/', CreateProfileView.as_view(), name='create-profile'),
-    path('profiles/<int:profile_id>/update/', UpdateProfileView.as_view(), name='update-profile'),
-    path('profiles/<int:profile_id>/', GetProfileView.as_view(), name='get-profile'),
-    # path('create/group/', views.create_group, name='create_group'),
-    # path('groups/', views.group_list, name='group_list'),
-
-    # # Post URLs
-    # path('create/post/', views.create_post, name='create_post'),
-    # path('posts/', views.post_list, name='post_list'),
-    # path('post/<int:post_id>/', views.post_detail, name='post_detail'),
-    # path('post/<int:post_id>/comment/', views.create_comment, name='create_comment'),
-
-    # Event URLs
-    path('create/event/', views.create_event, name='create_event'),
-    path('events/', views.event_list, name='event_list'),
-    path('event/<int:event_id>/rsvp/', views.rsvp_event, name='rsvp_event'),
+    path('profile/create/<int:user_id>/', CreateProfileView.as_view(), name='create_profile'),
+    path('profile/update/<int:profile_id>/', UpdateProfileView.as_view(), name='update_profile'),
+    path('profile/<int:profile_id>/', GetProfileView.as_view(), name='get_profile'),
 ]
