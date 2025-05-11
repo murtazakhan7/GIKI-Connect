@@ -1,0 +1,90 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/sign_up.css' %}">
+{% endblock %}
+
+{% block body %}
+
+{% block JS %}
+<script src="{% static 'core/role_toggle.js' %}" defer></script>
+{% endblock %}
+
+<div>
+    <h1>Welcome to GIKI-Connect</h1>
+</div>
+<div>
+    <img src="https://giki.edu.pk/wp-content/uploads/2019/09/10649697_710129879074987_5414857352736262169_n.jpg" alt="404">
+</div>
+
+<h2>Sign Up</h2>
+<form action="./submit" method="post">
+    {% csrf_token %}
+
+    <div>
+        <label for="role"><strong>Role</strong></label>
+        <select id="role" name="role" required>
+            <option value="">--Select--</option>
+            <option value="Student">Student</option>
+            <option value="Alumnus">Alumnus</option>
+            <option value="Admin">Admin</option>
+        </select>
+    </div>
+
+    <div id="user-fields">
+        <div>
+            <label for="name"><strong>Name</strong></label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+        </div>
+
+        <div>
+            <label for="email"><strong>Email</strong></label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+        </div>
+
+        <div>
+            <label for="password_hash"><strong>Password</strong></label>
+            <input type="password" id="password_hash" name="password_hash" placeholder="Password" required>
+        </div>
+
+        <div>
+            <label for="confirm_pass"><strong>Confirm Password</strong></label>
+            <input type="password" name="confirm_password" id="confirm_pass" placeholder="Confirm Password" required>
+        </div>
+    </div>
+
+    <div id="student-fields" class="role-specific-fields" style="display: none;">
+        <div>
+            <label for="major"><strong>Major</strong></label>
+            <input type="text" id="major" name="student[major]" placeholder="Enter your major">
+        </div>
+
+        <div>
+            <label for="graduation-year"><strong>Graduation Year</strong></label>
+            <input type="number" id="graduation-year" name="student[graduation_year]" placeholder="Expected graduation year">
+        </div>
+    </div>
+
+    <div id="alumnus-fields" class="role-specific-fields" style="display: none;">
+        <div>
+            <label for="employer"><strong>Employer</strong></label>
+            <input type="text" id="employer" name="alumnus[employer]" placeholder="Current employer">
+        </div>
+
+        <div>
+            <label for="job-title"><strong>Job Title</strong></label>
+            <input type="text" id="job-title" name="alumnus[job_title]" placeholder="Your current position">
+        </div>
+
+        <div>
+            <label for="mentoring-interest"><strong>Mentoring Interest</strong></label>
+            <input type="text" id="mentoring-interest" name="alumnus[mentoring_interest]" placeholder="Areas of mentoring interest">
+        </div>
+    </div>
+
+    <div id="submit-container">
+        <input type="submit" value="Submit">
+    </div>
+</form>
+{% endblock %}

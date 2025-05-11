@@ -1,0 +1,190 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/attend_event.css' %}">
+{% endblock %}
+
+{% block body %}
+
+{% block JS %}
+<script src="{% static 'core/attend_event.js' %}" defer></script>
+{% endblock %}
+
+<div class="container">
+    <h1>GIKI-Connect Events</h1>
+    
+    <div class="header-image">
+        <img src="{% static 'media/events_banner.jpeg' %}" alt="Events Banner">
+    </div>
+
+    <div class="filters">
+        <div class="search-bar">
+            <input type="text" id="event-search" placeholder="Search events...">
+            <button id="search-btn"><i class="fa fa-search"></i> Search</button>
+        </div>
+        
+        <div class="filter-options">
+            <select id="filter-date">
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+            </select>
+            
+            <select id="filter-rsvp">
+                <option value="all">All Events</option>
+                <option value="attending">Attending</option>
+                <option value="maybe">Maybe</option>
+                <option value="not-responded">Not Responded</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="events-container">
+        <h2>Upcoming Events</h2>
+        
+        {% if events %}
+            <div class="events-grid">
+                {% for event in events %}
+                    <div class="event-card" data-event-id="{{ event.event_id }}">
+                        <div class="event-header">
+                            <h3>{{ event.title }}</h3>
+                            <span class="event-date">{{ event.start|date:"F j, Y" }}</span>
+                        </div>
+                        
+                        <div class="event-details">
+                            <p class="event-time"><i class="fa fa-clock-o"></i> {{ event.start|date:"g:i A" }} - {{ event.end|date:"g:i A" }}</p>
+                            <p class="event-location"><i class="fa fa-map-marker"></i> {{ event.location }}</p>
+                            <p class="event-organizer"><i class="fa fa-user"></i> Organized by: {{ event.organizer.name }}</p>
+                            <p class="event-capacity"><i class="fa fa-users"></i> Capacity: {{ event.capacity }}</p>
+                            
+                            {% if event.attendees_count %}
+                                <p class="event-attendees"><i class="fa fa-check-circle"></i> {{ event.attendees_count }} people attending</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="event-description">
+                            <p>{{ event.description|truncatechars:150 }}</p>
+                        </div>
+                        
+                        <div class="event-actions">
+                            <button class="btn-details" data-event-id="{{ event.event_id }}">View Details</button>
+                            
+                            {% if event.user_rsvp %}
+                                <div class="rsvp-status {{ event.user_rsvp|lower }}">
+                                    <span>Your RSVP: {{ event.user_rsvp }}</span>
+                                    <button class="btn-change-rsvp">Change</button>
+                                </div>
+                            {% else %}
+                                <div class="rsvp-buttons">
+                                    <button class="btn-rsvp yes" data-event-id="{{ event.event_id }}" data-status="Yes">Going</button>
+                                    <button class="btn-rsvp maybe" data-event-id="{{ event.event_id }}" data-status="Maybe">Maybe</button>
+                                    <button class="btn-rsvp no" data-event-id="{{ event.event_id }}" data-status="No">Not Going</button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            {% if pagination %}
+                <div class="pagination">
+                    {% if pagination.has_previous %}
+                        <a href="?page={{ pagination.previous_page_number }}" class="page-link">&laquo; Previous</a>
+                    {% endif %}
+                    
+                    <span class="current-page">
+                        Page {{ pagination.number }} of {{ pagination.paginator.num_pages }}
+                    </span>
+                    
+                    {% if pagination.has_next %}
+                        <a href="?page={{ pagination.next_page_number }}" class="page-link">Next &raquo;</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="no-events">
+                <p>No upcoming events found.</p>
+                <a href="{% url 'create_event' %}" class="btn-primary">Create an Event</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Event Details Modal -->
+<div id="event-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div id="event-modal-content">
+            <!-- Content will be loaded dynamically -->
+            <div class="event-modal-header">
+                <h2 id="modal-event-title"></h2>
+                <p id="modal-event-date"></p>
+            </div>
+            
+            <div class="event-modal-details">
+                <div class="detail-row">
+                    <span class="detail-label"><i class="fa fa-clock-o"></i> Time:</span>
+                    <span id="modal-event-time"></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label"><i class="fa fa-map-marker"></i> Location:</span>
+                    <span id="modal-event-location"></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label"><i class="fa fa-user"></i> Organizer:</span>
+                    <span id="modal-event-organizer"></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label"><i class="fa fa-users"></i> Capacity:</span>
+                    <span id="modal-event-capacity"></span>
+                </div>
+            </div>
+            
+            <div class="event-modal-description">
+                <h3>Description</h3>
+                <p id="modal-event-description"></p>
+            </div>
+            
+            <div class="event-modal-rsvp">
+                <h3>Your RSVP</h3>
+                <form id="rsvp-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="modal-event-id" name="event_id">
+                    
+                    <div class="rsvp-options">
+                        <label class="rsvp-option">
+                            <input type="radio" name="rsvp_status" value="Yes">
+                            <span class="rsvp-btn yes">Going</span>
+                        </label>
+                        
+                        <label class="rsvp-option">
+                            <input type="radio" name="rsvp_status" value="Maybe">
+                            <span class="rsvp-btn maybe">Maybe</span>
+                        </label>
+                        
+                        <label class="rsvp-option">
+                            <input type="radio" name="rsvp_status" value="No">
+                            <span class="rsvp-btn no">Not Going</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit-rsvp">Submit RSVP</button>
+                </form>
+            </div>
+            
+            <div class="event-modal-attendees">
+                <h3>Who's Going</h3>
+                <div id="attendees-list">
+                    <!-- List of attendees will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/event.css' %}">
+{% endblock %}
+
+{% block body %}
+
+{% block JS %}
+<script src="{% static 'core/event.js' %}" defer></script>
+{% endblock %}
+
+<div class="container">
+    <h1>GIKI-Connect Event Management</h1>
+    
+    <div class="header-image">
+        <img src="{% static 'media/events_header.jpeg' %}" alt="Events Banner">
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="create">Create Event</button>
+        <button class="tab-btn" data-tab="manage">Manage My Events</button>
+    </div>
+
+    <div id="create-event" class="tab-content active">
+        <h2>Create New Event</h2>
+        <form action="./event/create" method="post" class="event-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="title"><strong>Event Title</strong></label>
+                <input type="text" id="title" name="title" placeholder="Enter event title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description"><strong>Description</strong></label>
+                <textarea id="description" name="description" placeholder="Describe your event" rows="4" required></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="start"><strong>Start Date & Time</strong></label>
+                    <input type="datetime-local" id="start" name="start" required>
+                </div>
+                
+                <div class="form-group half">
+                    <label for="end"><strong>End Date & Time</strong></label>
+                    <input type="datetime-local" id="end" name="end" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="location"><strong>Location</strong></label>
+                <input type="text" id="location" name="location" placeholder="Event location" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="capacity"><strong>Capacity</strong></label>
+                <input type="number" id="capacity" name="capacity" min="1" placeholder="Maximum number of attendees" required>
+            </div>
+            
+            <div class="form-group submit-container">
+                <input type="submit" value="Schedule Event" class="btn-primary">
+            </div>
+        </form>
+    </div>
+
+    <div id="manage-events" class="tab-content">
+        <h2>My Events</h2>
+        
+        {% if user_events %}
+            <div class="events-list">
+                {% for event in user_events %}
+                    <div class="event-card">
+                        <h3>{{ event.title }}</h3>
+                        <div class="event-details">
+                            <p><strong>Date:</strong> {{ event.start|date:"F j, Y" }} at {{ event.start|date:"g:i A" }}</p>
+                            <p><strong>Location:</strong> {{ event.location }}</p>
+                            <p><strong>Capacity:</strong> {{ event.capacity }} attendees</p>
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn-update" data-event-id="{{ event.event_id }}">Update</button>
+                            <button class="btn-cancel" data-event-id="{{ event.event_id }}">Cancel Event</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-events">
+                <p>You haven't created any events yet.</p>
+                <button class="btn-primary create-tab-trigger">Create Your First Event</button>
+            </div>
+        {% endif %}
+
+        <!-- Update Event Modal -->
+        <div id="update-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3>Update Event</h3>
+                <form id="update-event-form" action="./event/update" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" id="update-event-id" name="event_id">
+                    
+                    <div class="form-group">
+                        <label for="update-title"><strong>Event Title</strong></label>
+                        <input type="text" id="update-title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="update-description"><strong>Description</strong></label>
+                        <textarea id="update-description" name="description" rows="4" required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="update-start"><strong>Start Date & Time</strong></label>
+                            <input type="datetime-local" id="update-start" name="start" required>
+                        </div>
+                        
+                        <div class="form-group half">
+                            <label for="update-end"><strong>End Date & Time</strong></label>
+                            <input type="datetime-local" id="update-end" name="end" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="update-location"><strong>Location</strong></label>
+                        <input type="text" id="update-location" name="location" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="update-capacity"><strong>Capacity</strong></label>
+                        <input type="number" id="update-capacity" name="capacity" min="1" required>
+                    </div>
+                    
+                    <div class="form-group submit-container">
+                        <input type="submit" value="Update Event" class="btn-primary">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
