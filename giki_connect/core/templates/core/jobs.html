@@ -1,0 +1,214 @@
+{% extends "core/layout.html" %}
+
+{% block CSS %}
+<style>
+    .jobs-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .job-card {
+        margin-bottom: 20px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .job-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+    
+    .job-title {
+        font-size: 1.3rem;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    
+    .job-company {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    .job-meta {
+        color: var(--light-text);
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+    
+    .job-description {
+        margin-bottom: 15px;
+    }
+    
+    .job-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .job-tag {
+        background-color: var(--accent-color);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .job-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .job-form {
+        margin-top: 30px;
+        margin-bottom: 40px;
+    }
+    
+    .job-form h2 {
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .job-header {
+            flex-direction: column;
+        }
+        
+        .job-actions {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="jobs-container">
+    <h1>Job Opportunities</h1>
+    
+    {% if user %}
+    <div class="card job-form">
+        <h2>Post a New Job Opportunity</h2>
+        <form action="{% url 'core:create_job' user.user_id %}" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="title">Job Title</label>
+                <input type="text" id="title" name="title" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="company">Company</label>
+                <input type="text" id="company" name="company" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="location">Location</label>
+                <input type="text" id="location" name="location" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="job_type">Job Type</label>
+                <select id="job_type" name="job_type" class="form-control" required>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Remote">Remote</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="description">Job Description</label>
+                <textarea id="description" name="description" class="form-control" rows="5" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="requirements">Requirements</label>
+                <textarea id="requirements" name="requirements" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="application_link">Application Link (Optional)</label>
+                <input type="url" id="application_link" name="application_link" class="form-control">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Post Job</button>
+        </form>
+    </div>
+    {% endif %}
+    
+    <div class="jobs-list">
+        {% if jobs %}
+            {% for job in jobs %}
+                <div class="card job-card">
+                    <div class="job-header">
+                        <div>
+                            <h3 class="job-title">{{ job.title }}</h3>
+                            <p class="job-company">{{ job.company }}</p>
+                        </div>
+                        <div class="job-meta">
+                            <p>{{ job.location }} • {{ job.job_type }}</p>
+                            <p>Posted {{ job.created_at|timesince }} ago</p>
+                        </div>
+                    </div>
+                    
+                    <div class="job-description">
+                        <p>{{ job.description }}</p>
+                    </div>
+                    
+                    <h4>Requirements:</h4>
+                    <div class="job-description">
+                        <p>{{ job.requirements }}</p>
+                    </div>
+                    
+                    <div class="job-tags">
+                        {% for tag in job.tags.all %}
+                            <span class="job-tag">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="job-actions">
+                        <div>
+                            <p>Posted by: {{ job.posted_by.username }}</p>
+                        </div>
+                        <div>
+                            {% if job.application_link %}
+                                <a href="{{ job.application_link }}" class="btn btn-primary" target="_blank">Apply Now</a>
+                            {% endif %}
+                            {% if user and job.posted_by.id == user.user_id %}
+                                <a href="#" class="btn btn-outline">Edit</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <p>No job opportunities available at the moment.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block JS %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Job posting form validation
+        const jobForm = document.querySelector('.job-form form');
+        if (jobForm) {
+            jobForm.addEventListener('submit', function(e) {
+                const title = document.getElementById('title').value.trim();
+                const company = document.getElementById('company').value.trim();
+                const description = document.getElementById('description').value.trim();
+                
+                if (!title || !company || !description) {
+                    e.preventDefault();
+                    alert('Please fill out all required fields');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

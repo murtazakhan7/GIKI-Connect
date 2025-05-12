@@ -50,6 +50,15 @@ class SignInView(APIView):
     template_name = 'core/sign_in.html'
     
     def get(self, request):
+        # Check if this is a logout request
+        if request.path.endswith('/logout/'):
+            # Clear the session
+            request.session.flush()
+            # Redirect to sign in page
+            if request.accepted_renderer.format == 'html':
+                return Response({'redirect': True, 'redirect_url': '/api/signin/'}, template_name=self.template_name)
+            return Response({"message": "Logged out successfully"})
+            
         # Render the empty form on GET requests
         return Response({}, template_name=self.template_name)
     
@@ -533,7 +542,7 @@ class GroupMessageView(APIView):
 # 6. List All Groups
 class ListGroupsView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/group.html'
+    template_name = 'core/groups_list.html'
     
     def get(self, request):
         groups = Group.objects.all()
@@ -1362,17 +1371,23 @@ class GetProfileView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
     template_name = 'core/profile.html'
     
-    def get(self, request, profile_id=None):
-        if profile_id:
+    def get(self, request, user_id=None):
+        if user_id:
             try:
-                profile = Profile.objects.get(profile_id=profile_id)
+                user = User.objects.get(user_id=user_id)
+                profile = Profile.objects.get(user=user)
                 serializer = ProfileSerializer(profile)
                 if request.accepted_renderer.format == 'html':
-                    return Response({'profile': serializer.data}, template_name=self.template_name)
+                    return Response({'profile': serializer.data, 'user': UserSerializer(user).data}, template_name=self.template_name)
                 return Response(serializer.data)
-            except Profile.DoesNotExist:
-                error = {"error": "Profile not found."}
+            except User.DoesNotExist:
+                error = {"error": "User not found."}
                 if request.accepted_renderer.format == 'html':
                     return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
+                return Response(error, status=status.HTTP_404_NOT_FOUND)
+            except Profile.DoesNotExist:
+                error = {"error": "Profile not found for this user."}
+                if request.accepted_renderer.format == 'html':
+                    return Response({'errors': error, 'user': UserSerializer(user).data}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
                 return Response(error, status=status.HTTP_404_NOT_FOUND)
         return Response({}, template_name=self.template_name)

@@ -6,44 +6,337 @@
 
     {% load static %}
     
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
     <style>
-        .header {
-            display: flex;
-            justify-content: flex-end;
-            padding: 10px 20px;
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #e0e0e0;
+        :root {
+            --primary-color: #2c5282;
+            --secondary-color: #4299e1;
+            --accent-color: #edf2f7;
+            --text-color: #2d3748;
+            --light-text: #718096;
+            --border-color: #e2e8f0;
         }
-        .header-link {
-            margin-left: 15px;
-            color: #2c5282;
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        
+        .main-container {
+            width: 100%;
+            min-height: calc(100vh - 60px);
+            padding: 20px;
+            margin-top: 60px;
+        }
+        
+        /* Navbar Styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-item {
+            margin-left: 20px;
+        }
+        
+        .nav-link {
+            color: var(--text-color);
             text-decoration: none;
             font-weight: 500;
+            transition: color 0.3s;
         }
-        .header-link:hover {
-            text-decoration: underline;
+        
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+        
+        .toggle-button {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 30px;
+            height: 21px;
+            cursor: pointer;
+        }
+        
+        .toggle-button .bar {
+            height: 3px;
+            width: 100%;
+            background-color: var(--text-color);
+            border-radius: 10px;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1a365d;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* Alert Messages */
+        .alert {
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .alert-success {
+            background-color: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .alert-error {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+        
+        /* Card Styles */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Common Text Styles */
+        h1, h2, h3, h4 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .toggle-button {
+                display: flex;
+            }
+            
+            .navbar-nav {
+                display: none;
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background-color: white;
+                flex-direction: column;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            
+            .navbar-nav.active {
+                display: flex;
+            }
+            
+            .nav-item {
+                margin: 0;
+                text-align: center;
+                padding: 15px 0;
+                border-bottom: 1px solid var(--border-color);
+            }
         }
     </style>
 
     {% block CSS %}
-
     {% endblock %}
 
     {% block JS %}
-
     {% endblock %}
 
     <title>GIKI-Connect</title>
 </head>
 <body>
-    {% if user %}
-    <div class="header">
-        <a href="{% url 'core:signout' %}" class="header-link">Sign Out</a>
+    <nav class="navbar">
+        <a href="{% url 'core:all-posts' %}" class="navbar-brand">GIKI-Connect</a>
+        <div class="toggle-button">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a href="{% url 'core:all-posts' %}" class="nav-link {% if request.resolver_match.url_name == 'all-posts' %}active{% endif %}">
+                    <i class="fas fa-home"></i> Home
+                </a>
+            </li>
+            {% if user and user.user_id %}
+            <li class="nav-item">
+                <a href="{% url 'core:get_profile' user.user_id %}" class="nav-link {% if request.resolver_match.url_name == 'get_profile' %}active{% endif %}">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:view_all_connections' user.user_id %}" class="nav-link {% if request.resolver_match.url_name == 'view_all_connections' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Connections
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:list_messages' user.user_id %}" class="nav-link {% if request.resolver_match.url_name == 'list_messages' %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> Messages
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:list_events' %}" class="nav-link {% if request.resolver_match.url_name == 'list_events' %}active{% endif %}">
+                    <i class="fas fa-calendar"></i> Events
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:jobs_list' %}" class="nav-link {% if request.resolver_match.url_name == 'jobs_list' %}active{% endif %}">
+                    <i class="fas fa-briefcase"></i> Jobs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:list_groups' %}" class="nav-link {% if request.resolver_match.url_name == 'list_groups' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Groups
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:view_active_mentorships' user.user_id %}" class="nav-link {% if request.resolver_match.url_name == 'view_active_mentorships' %}active{% endif %}">
+                    <i class="fas fa-hands-helping"></i> Mentorship
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:signin' %}" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </li>
+            {% else %}
+            <li class="nav-item">
+                <a href="{% url 'core:signin' %}" class="nav-link {% if request.resolver_match.url_name == 'signin' %}active{% endif %}">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'core:signup' %}" class="nav-link {% if request.resolver_match.url_name == 'signup' %}active{% endif %}">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+    <div class="main-container">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block body %}
+        {% endblock %}
     </div>
-    {% endif %}
     
-    {% block body %}
+    <div id="app-data" 
+         data-has-redirect="{% if redirect %}true{% else %}false{% endif %}" 
+         data-redirect-url="{% if redirect_url %}{{ redirect_url }}{% endif %}"
+         data-message="{% if message %}{{ message }}{% endif %}">
+    </div>
     
-    {% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButton = document.querySelector('.toggle-button');
+            const navbarLinks = document.querySelector('.navbar-nav');
+            
+            if (toggleButton) {
+                toggleButton.addEventListener('click', function() {
+                    navbarLinks.classList.toggle('active');
+                });
+            }
+            
+            // Get data from the data attributes
+            const appData = document.getElementById('app-data');
+            const hasRedirect = appData.dataset.hasRedirect === 'true';
+            const redirectUrl = appData.dataset.redirectUrl;
+            const message = appData.dataset.message;
+            
+            // Handle redirects if specified
+            if (hasRedirect && redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+            
+            // Display messages if present
+            if (message) {
+                alert(message);
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'core/layout.html' %}
 {% load static %}
 
 {% block CSS %}
@@ -9,7 +9,7 @@
 <div class="profile-container">
     <div class="profile-header">
         <h1>Profile</h1>
-        {% if profile %}
+        {% if profile and user.user_id == profile.user.user_id %}
         <div class="profile-actions">
             <a href="{% url 'core:update_profile' profile.profile_id %}" class="btn btn-primary">Edit Profile</a>
         </div>
@@ -37,40 +37,144 @@
                     <span class="label">Email:</span>
                     <span class="value">{{ profile.user.email }}</span>
                 </div>
-                
+                {% if profile.title %}
+                <div class="info-item">
+                    <span class="label">Title:</span>
+                    <span class="value">{{ profile.title }}</span>
+                </div>
+                {% endif %}
+                {% if profile.bio %}
                 <div class="info-item">
                     <span class="label">Bio:</span>
                     <p class="value bio-text">{{ profile.bio }}</p>
                 </div>
+                {% endif %}
+                {% if profile.education %}
                 <div class="info-item">
                     <span class="label">Education:</span>
                     <p class="value">{{ profile.education }}</p>
                 </div>
+                {% endif %}
                 <div class="info-item">
                     <span class="label">Skills:</span>
                     <div class="skills-list">
-                        {% for skill in profile.skills %}
-                        <span class="skill-tag">{{ skill }}</span>
+                        {% for skill in profile.skills.all %}
+                        <span class="skill-tag">{{ skill.name }}</span>
                         {% empty %}
                         <span class="no-data">No skills added yet</span>
                         {% endfor %}
                     </div>
                 </div>
             </div>
+            
+            {% if profile.experience_set.all %}
+            <div class="profile-section">
+                <h2>Experience</h2>
+                {% for experience in profile.experience_set.all %}
+                <div class="info-item">
+                    <span class="label">{{ experience.title }} at {{ experience.company }}</span>
+                    <p class="value">{{ experience.start_date|date:"M Y" }} - 
+                        {% if experience.current %}
+                            Present
+                        {% else %}
+                            {{ experience.end_date|date:"M Y" }}
+                        {% endif %}
+                    </p>
+                    {% if experience.description %}
+                    <p class="value">{{ experience.description }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if user.user_id != profile.user.user_id %}
+            <div class="profile-section">
+                <div class="info-item">
+                    {% if is_connected %}
+                    <p>You are connected with {{ profile.user.name }}</p>
+                    <form action="{% url 'core:remove_connection' user.user_id profile.user.user_id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline">Remove Connection</button>
+                    </form>
+                    {% elif connection_pending %}
+                    <p>Connection request pending</p>
+                    <form action="{% url 'core:cancel_connection_request' user.user_id profile.user.user_id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline">Cancel Request</button>
+                    </form>
+                    {% else %}
+                    <form action="{% url 'core:send_connection_request' user.user_id profile.user.user_id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Connect</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="profile-sidebar">
+            <div class="profile-avatar">
+                {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="{{ profile.user.name }}">
+                {% else %}
+                <div class="profile-avatar-placeholder">{{ profile.user.name|first }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="profile-stats">
+                <h2>Stats</h2>
+                <div class="profile-stats-item">
+                    <span class="stat-label">Posts</span>
+                    <span class="stat-value">{{ profile.user.posts.count }}</span>
+                </div>
+                <div class="profile-stats-item">
+                    <span class="stat-label">Connections</span>
+                    <span class="stat-value">{{ profile.user.connections.count }}</span>
+                </div>
+                {% if profile.user.is_alumni %}
+                <div class="profile-stats-item">
+                    <span class="stat-label">Mentees</span>
+                    <span class="stat-value">{{ profile.user.mentees.count }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
             <div class="quick-links">
                 <h2>Quick Links</h2>
                 <ul>
-                    <li><a href="{% url 'core:view_all_connections' profile.user.user_id %}">Manage Connections</a></li>
-                    <li><a href="{% url 'core:list_messages' profile.user.user_id %}">Messages</a></li>
-                    <li><a href="{% url 'core:list_events' %}">Events</a></li>
+                    <li>
+                        <a href="{% url 'core:user-posts' profile.user.user_id %}">
+                            <i class="fas fa-file-alt"></i> View Posts
+                        </a>
+                    </li>
+                    {% if user.user_id == profile.user.user_id %}
+                    <li>
+                        <a href="{% url 'core:view_all_connections' profile.user.user_id %}">
+                            <i class="fas fa-users"></i> Manage Connections
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:list_messages' profile.user.user_id %}">
+                            <i class="fas fa-envelope"></i> Messages
+                        </a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a href="{% url 'core:send_message' profile.user.user_id %}">
+                            <i class="fas fa-paper-plane"></i> Send Message
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
         {% else %}
-        <p class="no-profile">Profile not found.</p>
+        <div class="no-profile">
+            <h2>Profile not found</h2>
+            <p>The requested profile does not exist or you don't have permission to view it.</p>
+        </div>
         {% endif %}
     </div>
 </div>

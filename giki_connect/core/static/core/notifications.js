@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mark a single notification as read
     function markAsRead(notificationId) {
-        fetch(`/api/notifications/read/${notificationId}/`, {
+        fetch(`/notifications/read/${notificationId}/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCsrfToken(),
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mark all notifications as read
     function markAllAsRead() {
-        fetch('/api/notifications/read-all/', {
+        fetch('/notifications/read-all/', {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCsrfToken(),
