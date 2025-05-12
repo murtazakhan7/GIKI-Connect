@@ -54,14 +54,6 @@ class SignInView(APIView):
         else:
             return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
 
-class SignOutView(APIView):
-    def post(self, request):
-        if 'user_id' in request.session:
-            request.session.flush()
-            return Response({"message": "Successfully logged out."})
-        else:
-            return Response({"error": "User not logged in."}, status=status.HTTP_400_BAD_REQUEST)
-
 
 class CommentAPI(APIView):
 
@@ -822,9 +814,9 @@ class UpdateProfileView(APIView):
 
 
 class GetProfileView(APIView):
-    def get(self, request, profile_id):
+    def get(self, request, user_id):
         try:
-            profile = Profile.objects.get(profile_id=profile_id)
+            profile = Profile.objects.get(user_id=user_id)
             serializer = ProfileSerializer(profile)
             return Response(serializer.data)
         except Profile.DoesNotExist:
