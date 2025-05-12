@@ -1,36 +1,11 @@
 from django.urls import path
-from .views import (
-    NotificationAPI,
-    StudentMentorshipAPI,
-    AlumniMentorshipAPI,    
-    MentorshipStatusAPI,
-    ShowMentorAPI,
-    MessageView,
-    SendMessageView,
-    ViewMessage,
-    JobPostAPI,
-    AllJobPostsAPI,
-    EventListView,
-    RSVPEventView,
-    EventAttendeesView,
-    EventUpdateView,
-    SignUpView,
-    CreateProfileView,
-    UpdateProfileView,
-    GetProfileView,
-    SendConnectionRequestAPI,
-    ManageConnectionRequestAPI,
-    ViewReceivedRequestsAPI,
-    ViewConnectionsAPI,
-    GroupMessageView,
-    ListGroupsView,
-    CreateGroupView,
-    JoinGroupView,
-    MakeModeratorView,
-    KickMemberView,
-    ApprovedGroupsView,
-    ApproveRequestView, 
-)
+from .views import ( NotificationAPI, StudentMentorshipAPI, AlumniMentorshipAPI, MentorshipStatusAPI, ShowMentorAPI, MessageView, 
+                    SendMessageView, ViewMessage, JobPostAPI, AllJobPostsAPI, EventListView, RSVPEventView, EventAttendeesView, 
+                    EventUpdateView, SignUpView, CreateProfileView, UpdateProfileView, GetProfileView, SendConnectionRequestAPI, 
+                    ManageConnectionRequestAPI, ViewReceivedRequestsAPI, ViewConnectionsAPI, GroupMessageView, ListGroupsView, 
+                    CreateGroupView, JoinGroupView, MakeModeratorView, KickMemberView, ApprovedGroupsView, ApproveRequestView,  
+                    CreatePostView, AllPostsView, UserPostsView, PostDetailView, DeletePostView, CommentAPI, PostCommentsAPI, 
+                    SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView, SignOutView )
 
 urlpatterns = [
     # Notification endpoints
@@ -53,6 +28,7 @@ urlpatterns = [
 
      # Event endpoints
     path('events/', EventListView.as_view(), name='list_events'),
+    path('events/create/<int:user_id>/', EventListView.as_view(), name='create_event'),
     path('events/<int:event_id>/rsvp/', RSVPEventView.as_view(), name='rsvp_event'),
     path('events/<int:event_id>/attendees/', EventAttendeesView.as_view(), name='event_attendees'),
     path('events/<int:event_id>/update/', EventUpdateView.as_view(), name='update_event'),
@@ -87,8 +63,25 @@ urlpatterns = [
     path('jobs/create/<int:user_id>/', JobPostAPI.as_view(), name='create_job'),
     path('jobs/all/', AllJobPostsAPI.as_view(), name='all_jobs'),
     
+    # posts
+    path('posts/<int:user_id>/', CreatePostView.as_view(), name='create-post'),
+    path('posts/', AllPostsView.as_view(), name='all-posts'),
+    path('posts/user/<int:user_id>/', UserPostsView.as_view(), name='user-posts'),
+    path('posts/<int:post_id>/details/', PostDetailView.as_view(), name='post-detail'),
+    path('posts/<int:post_id>/delete/<int:user_id>/', DeletePostView.as_view(), name='delete-post'),
+    
+    # Comments
+    path('comment/<int:post_id>/<int:user_id>/', CommentAPI.as_view(), name='add_comment'),
+    path('comment/edit/<uuid:comment_id>/<int:user_id>/', CommentAPI.as_view(), name='edit_comment'),
+    path('comment/delete/<uuid:comment_id>/<int:user_id>/', CommentAPI.as_view(), name='delete_comment'),
+    path('comment/post/<int:post_id>/', PostCommentsAPI.as_view(), name='post_comments'),
+
     # User and profile endpoints
     path('signup/', SignUpView.as_view(), name='signup'),
+    path('signin/', SignInView.as_view(), name='signin'),
+    path('signout/', SignOutView.as_view(), name='signout'),
+
+    # PROFILES
     path('profile/create/<int:user_id>/', CreateProfileView.as_view(), name='create_profile'),
     path('profile/update/<int:profile_id>/', UpdateProfileView.as_view(), name='update_profile'),
     path('profile/<int:profile_id>/', GetProfileView.as_view(), name='get_profile'),

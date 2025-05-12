@@ -1,17 +1,21 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+
+
 from .models import (
-    User, Student, Alumnus, Profile, Notification, JobPost, 
+    User, Student, Alumnus, Profile, Notification, JobPost, Post,
    Alumnus, Student, MentorshipMatch, Connection, ConnectionRequest, Message, User, EventAttendee, Event,
-   Group, GroupMember, MentorshipApplication )
+   Group, GroupMember, MentorshipApplication, Comment )
 from .serializers import (
     UserSerializer, StudentSerializer, AlumnusSerializer, ProfileSerializer, NotificationSerializer, 
-    JobPostSerializer, MentorshipApplicationSerializer,  MentorshipMatchSerializer, 
+    JobPostSerializer, MentorshipApplicationSerializer,  MentorshipMatchSerializer, PostSerializer,
     ConnectionSerializer, ConnectionRequestSerializer, MessageSerializer, EventAttendeeSerializer, EventSerializer,
-     GroupMemberSerializer, GroupSerializer, MentorshipApplicationSerializer, ConnectionRequestSerializer
+     GroupMemberSerializer, GroupSerializer, MentorshipApplicationSerializer, ConnectionRequestSerializer, CommentSerializer
 )
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
+
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
@@ -31,6 +35,122 @@ class NotificationAPI(APIView):
         notification.save()
         return Response({'status': 'marked as read'})
 
+class SignInView(APIView):
+    def post(self, request):
+        mail = request.data.get('mail')
+        password = request.data.get('password')
+
+        if not mail or not password:
+            return Response({"error": "Mail and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = get_object_or_404(User, mail=mail)
+
+        if check_password(password, user.password_hash):
+            # Invalidate any previous session
+            request.session.flush()
+            # Set session for this user
+            request.session['user_id'] = user.user_id
+            return Response({"message": "Login successful", "user_id": user.user_id})
+        else:
+            return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+
+class SignOutView(APIView):
+    def post(self, request):
+        if 'user_id' in request.session:
+            request.session.flush()
+            return Response({"message": "Successfully logged out."})
+        else:
+            return Response({"error": "User not logged in."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CommentAPI(APIView):
+
+    def post(self, request, post_id, user_id):
+        post = get_object_or_404(Post, pk=post_id)
+        author = get_object_or_404(User, pk=user_id)
+        data = request.data.copy()
+        data['post'] = post.post_id
+        data['author'] = author.user_id
+        serializer = CommentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, comment_id, user_id):
+        comment = get_object_or_404(Comment, pk=comment_id)
+        if comment.author.user_id != user_id:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()  # updates timestamp automatically
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, comment_id, user_id):
+        comment = get_object_or_404(Comment, pk=comment_id)
+        if comment.author.user_id != user_id:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        comment.delete()
+        return Response({'status': 'Comment deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+class PostCommentsAPI(APIView):
+    def get(self, request, post_id):
+        post = get_object_or_404(Post, pk=post_id)
+        comments = Comment.objects.filter(post=post).order_by('-timestamp')
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+    
+class CreatePostView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, user_id):
+        author = get_object_or_404(User, pk=user_id)
+        data = request.data.copy()
+        data['author'] = user_id
+        serializer = PostSerializer(data=data)
+        if serializer.is_valid():
+            post = serializer.save()
+
+            # Notify other users
+            users = User.objects.exclude(user_id=user_id)
+            notifications = [
+                Notification(
+                    user=u,
+                    type='Post',
+                    content=f"{author.name} made a new post!"
+                ) for u in users
+            ]
+            Notification.objects.bulk_create(notifications)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class AllPostsView(APIView):
+    def get(self, request):
+        posts = Post.objects.all().order_by('-timestamp')
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
+
+class UserPostsView(APIView):
+    def get(self, request, user_id):
+        posts = Post.objects.filter(author__user_id=user_id).order_by('-timestamp')
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
+
+class PostDetailView(APIView):
+    def get(self, request, post_id):
+        post = get_object_or_404(Post, pk=post_id)
+        serializer = PostSerializer(post)
+        return Response(serializer.data)
+
+class DeletePostView(APIView):
+    def delete(self, request, post_id, user_id):
+        post = get_object_or_404(Post, pk=post_id)
+        if post.author.user_id != user_id:
+            return Response({"error": "You can only delete your own post."}, status=status.HTTP_403_FORBIDDEN)
+        post.delete()
+        return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
 class EventListView(APIView):
@@ -38,6 +158,16 @@ class EventListView(APIView):
         events = Event.objects.all().order_by('-start')
         serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
+    
+    def post(self, request, user_id):
+        user = get_object_or_404(User, pk=user_id)
+        data = request.data.copy()
+        data['organizer'] = user.user_id
+        serializer = EventSerializer(data=data)
+        if serializer.is_valid():
+            event = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RSVPEventView(APIView):
     def post(self, request, event_id):
