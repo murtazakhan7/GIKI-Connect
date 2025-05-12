@@ -4,6 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    {% load static %}
+    
+    <style>
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px 20px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .header-link {
+            margin-left: 15px;
+            color: #2c5282;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+
     {% block CSS %}
 
     {% endblock %}
@@ -15,6 +36,12 @@
     <title>GIKI-Connect</title>
 </head>
 <body>
+    {% if user %}
+    <div class="header">
+        <a href="{% url 'core:signout' %}" class="header-link">Sign Out</a>
+    </div>
+    {% endif %}
+    
     {% block body %}
     
     {% endblock %}
