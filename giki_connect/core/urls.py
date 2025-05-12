@@ -5,7 +5,7 @@ from .views import ( NotificationAPI, StudentMentorshipAPI, AlumniMentorshipAPI,
                     ManageConnectionRequestAPI, ViewReceivedRequestsAPI, ViewConnectionsAPI, GroupMessageView, ListGroupsView, 
                     CreateGroupView, JoinGroupView, MakeModeratorView, KickMemberView, ApprovedGroupsView, ApproveRequestView,  
                     CreatePostView, AllPostsView, UserPostsView, PostDetailView, DeletePostView, CommentAPI, PostCommentsAPI, 
-                    SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView, SignOutView )
+                    SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView )
 
 app_name = 'core'
 
@@ -81,10 +81,9 @@ urlpatterns = [
     # User and profile endpoints
     path('signup/', SignUpView.as_view(), name='signup'),
     path('signin/', SignInView.as_view(), name='signin'),
-    path('signout/', SignOutView.as_view(), name='signout'),
 
     # PROFILES
     path('profile/create/<int:user_id>/', CreateProfileView.as_view(), name='create_profile'),
     path('profile/update/<int:profile_id>/', UpdateProfileView.as_view(), name='update_profile'),
-    path('profile/<int:profile_id>/', GetProfileView.as_view(), name='get_profile'),
+    path('profile/<int:user_id>/', GetProfileView.as_view(), name='get_profile'),
 ]

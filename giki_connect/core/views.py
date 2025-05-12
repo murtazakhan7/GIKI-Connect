@@ -103,48 +103,6 @@ class SignInView(APIView):
                 return Response({'errors': error}, template_name=self.template_name)
             return Response(error, status=status.HTTP_404_NOT_FOUND)
 
-class SignOutView(APIView):
-    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/sign_in.html'
-    
-    def get(self, request):
-        if 'user_id' in request.session:
-            request.session.flush()
-            if request.accepted_renderer.format == 'html':
-                return Response({
-                    'message': 'Successfully logged out.',
-                    'redirect': True,
-                    'redirect_url': '/api/signin/'
-                }, template_name=self.template_name)
-            return Response({"message": "Successfully logged out."})
-        else:
-            if request.accepted_renderer.format == 'html':
-                return Response({
-                    'errors': {"error": "User not logged in."},
-                    'redirect': True,
-                    'redirect_url': '/api/signin/'
-                }, template_name=self.template_name)
-            return Response({"error": "User not logged in."}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def post(self, request):
-        if 'user_id' in request.session:
-            request.session.flush()
-            if request.accepted_renderer.format == 'html':
-                return Response({
-                    'message': 'Successfully logged out.',
-                    'redirect': True,
-                    'redirect_url': '/api/signin/'
-                }, template_name=self.template_name)
-            return Response({"message": "Successfully logged out."})
-        else:
-            if request.accepted_renderer.format == 'html':
-                return Response({
-                    'errors': {"error": "User not logged in."},
-                    'redirect': True,
-                    'redirect_url': '/api/signin/'
-                }, template_name=self.template_name)
-            return Response({"error": "User not logged in."}, status=status.HTTP_400_BAD_REQUEST)
-
 
 class CommentAPI(APIView):
 
