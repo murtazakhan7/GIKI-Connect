@@ -89,7 +89,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['post_id', 'author_id', 'author_name', 'content_text', 'media', 'timestamp']
+        fields = ['post_id', 'author_id', 'author_name', 'content_text', 'timestamp']
 
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
