@@ -1,0 +1,109 @@
+
+{% extends 'layout.html' %}
+{% load static %}
+
+
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/messages.css' %}">
+{% endblock %}
+
+
+{% block JS %}
+<script src="{% static 'core/messages.js' %}" defer></script>
+
+{% endblock %}
+{% block body %}
+<div class="messages-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Conversations</h2>
+            <button id="new-message-btn" class="btn btn-primary">New Message</button>
+        </div>
+        <div class="conversation-list">
+            {% for conversation in conversations %}
+                <div class="conversation-item {% if conversation.has_unread %}unread{% endif %}" 
+                     data-user-id="{{ conversation.user.user_id }}">
+                    <div class="user-avatar">
+                        <span>{{ conversation.user.name|first }}</span>
+                    </div>
+                    <div class="conversation-info">
+                        <h3>{{ conversation.user.name }}</h3>
+                        <p class="last-message">{{ conversation.last_message.content|truncatechars:30 }}</p>
+                    </div>
+                    <div class="conversation-meta">
+                        <span class="timestamp">{{ conversation.last_message.timestamp|date:"M d" }}</span>
+                        {% if conversation.unread_count %}
+                            <span class="unread-badge">{{ conversation.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No conversations yet</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="message-area">
+        <div id="no-conversation-selected" class="empty-state-message">
+            <div class="empty-state-icon">
+                <i class="far fa-comment-dots"></i>
+            </div>
+            <h2>Select a conversation or start a new one</h2>
+            <p>Choose from your existing conversations or click "New Message" to start messaging</p>
+        </div>
+        
+        <div id="conversation-view" class="conversation-view hidden">
+            <div class="conversation-header">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <span id="receiver-initial"></span>
+                    </div>
+                    <h2 id="receiver-name"></h2>
+                </div>
+            </div>
+            
+            <div class="messages-list" id="messages-list">
+                <!-- Messages will be loaded dynamically -->
+            </div>
+            
+            <div class="message-composer">
+                <form id="message-form">
+                    <input type="hidden" id="receiver-id" name="receiver_id">
+                    <textarea id="message-content" name="content" placeholder="Type a message..."></textarea>
+                    <button type="submit" class="btn btn-primary send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Message Modal -->
+<div class="modal" id="new-message-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>New Message</h2>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="new-message-form">
+                <div class="form-group">
+                    <label for="receiver-search">To:</label>
+                    <input type="text" id="receiver-search" name="receiver_search" 
+                           placeholder="Search for a user...">
+                    <div id="user-search-results" class="search-results"></div>
+                </div>
+                <div class="form-group">
+                    <label for="new-message-content">Message:</label>
+                    <textarea id="new-message-content" name="content" 
+                              placeholder="Type your message here..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
