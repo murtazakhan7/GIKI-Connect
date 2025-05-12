@@ -49,7 +49,31 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.name}"
+class Event(models.Model):
+    event_id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    location = models.CharField(max_length=255)
+    organizer = models.ForeignKey('User', on_delete=models.CASCADE)
+    capacity = models.PositiveIntegerField()
 
+    def __str__(self):
+        return self.title
+
+class EventAttendee(models.Model):
+    RSVP_CHOICES = [
+        ("Yes", "Yes"),
+        ("No", "No"),
+        ("Maybe", "Maybe")
+    ]
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    rsvp_status = models.CharField(max_length=10, choices=RSVP_CHOICES)
+
+    class Meta:
+        unique_together = ('event', 'user')
 
 class Notification(models.Model):
     TYPE_CHOICES = [
@@ -115,19 +139,28 @@ class MentorshipMatch(models.Model):
 
 
 
-class Message(models.Model):
-    message_id = models.AutoField(primary_key=True)
-    sender = models.ForeignKey('User', related_name='sent_messages', on_delete=models.CASCADE)
-    receiver = models.ForeignKey('User', related_name='received_messages', on_delete=models.CASCADE, null=True, blank=True)
-    group = models.ForeignKey('Group', on_delete=models.CASCADE, null=True, blank=True)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+class Group(models.Model):
     name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
     is_public = models.BooleanField(default=True)
+    chat = models.JSONField(default=list)
 
-    def __str__(self):
-        return self.name
+class GroupMember(models.Model):
+    ROLE_CHOICES = [
+        ("moderator", "Moderator"),
+        ("member", "Member"),
+        ("pending_request", "Pending Request"),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="pending_request")
+    joined_at = models.DateTimeField(null=True, blank=True)
+
+class Message(models.Model):
+    user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user1_messages')
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user2_messages')
+    chat_history = models.JSONField(default=list)
 
     
 class Group(models.Model):

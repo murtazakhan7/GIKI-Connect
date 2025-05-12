@@ -5,6 +5,15 @@ from .models import (
     Group, GroupMember, Post, Comment, Event, EventAttendee, 
     MentorshipApplication, Connection)
 
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = '__all__'
+
+class EventAttendeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventAttendee
+        fields = '__all__'
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,10 +56,20 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = '__all__'
 
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = '__all__'
+
+class GroupMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupMember
+        fields = '__all__'
+
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.PrimaryKeyRelatedField(read_only=True)
-    receiver = serializers.PrimaryKeyRelatedField(read_only=True)
+    user1 = serializers.PrimaryKeyRelatedField(read_only=True)
+    user2 = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Message

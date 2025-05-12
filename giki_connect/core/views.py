@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import (
     User, Student, Alumnus, Profile, Notification, JobPost, 
-   Alumnus, Student, MentorshipMatch, Connection, ConnectionRequest, Message, User, MentorshipApplication )
+   Alumnus, Student, MentorshipMatch, Connection, ConnectionRequest, Message, User, EventAttendee, Event,
+   Group, GroupMember, MentorshipApplication )
 from .serializers import (
     UserSerializer, StudentSerializer, AlumnusSerializer, ProfileSerializer, NotificationSerializer, 
     JobPostSerializer, MentorshipApplicationSerializer,  MentorshipMatchSerializer, 
-    ConnectionSerializer, ConnectionRequestSerializer, MessageSerializer, MentorshipApplicationSerializer, ConnectionRequestSerializer
+    ConnectionSerializer, ConnectionRequestSerializer, MessageSerializer, EventAttendeeSerializer, EventSerializer,
+     GroupMemberSerializer, GroupSerializer, MentorshipApplicationSerializer, ConnectionRequestSerializer
 )
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated
@@ -29,49 +31,388 @@ class NotificationAPI(APIView):
         notification.save()
         return Response({'status': 'marked as read'})
 
-class MentorshipMatchAPI(APIView):
-    def post(self, request):
-        action_type = request.data.get('action')
-
-        if action_type == 'propose':
-            mentor = get_object_or_404(Alumnus, user=request.user)
-            mentee_id = request.data.get('mentee_id')
-            mentee = get_object_or_404(Student, pk=mentee_id)
-            match = MentorshipMatch.objects.create(mentor=mentor, mentee=mentee)
-            Notification.objects.create(user=mentee.user, type="Mentorship", content=f"{request.user.name} wants to mentor you.")
-            return Response(MentorshipMatchSerializer(match).data)
-
-        elif action_type == 'apply':
-            if hasattr(request.user, 'student'):
-                app = MentorshipApplication.objects.create(student=request.user.student)
-                return Response(MentorshipApplicationSerializer(app).data)
-            return Response({"error": "Only students can apply."}, status=status.HTTP_403_FORBIDDEN)
-
-        return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AcceptMentorshipAPI(APIView):
-    def post(self, request, user_id):
-        mentor = get_object_or_404(Alumnus, user__id=user_id)
-        match_id = request.data.get('match_id')
-        match = get_object_or_404(MentorshipMatch, pk=match_id, mentor=mentor)
-
-        match.status = 'Active'
-        match.save()
-
-        Connection.objects.create(user1=mentor.user, user2=match.mentee.user)
-
-        return Response({"status": "Mentorship accepted"})
-
-class MenteesListAPI(APIView):
-
+class EventListView(APIView):
     def get(self, request):
-        if not hasattr(request.user, 'alumnus'):
-            return Response({"error": "Only mentors can view mentees."}, status=status.HTTP_403_FORBIDDEN)
-
-        matches = MentorshipMatch.objects.filter(mentor=request.user.alumnus, status='Active')
-        serializer = MentorshipMatchSerializer(matches, many=True)
+        events = Event.objects.all().order_by('-start')
+        serializer = EventSerializer(events, many=True)
         return Response(serializer.data)
+
+class RSVPEventView(APIView):
+    def post(self, request, event_id):
+        event = get_object_or_404(Event, pk=event_id)
+        user = request.user
+
+        if event.start <= now():
+            return Response({"error": "Cannot RSVP to past events."}, status=400)
+
+        if EventAttendee.objects.filter(event=event).count() >= event.capacity:
+            return Response({"error": "Event capacity is full."}, status=400)
+
+        if EventAttendee.objects.filter(event=event, user=user).exists():
+            return Response({"error": "You have already RSVPed to this event."}, status=400)
+
+        rsvp_status = request.data.get("rsvp_status", "Maybe")
+        attendee = EventAttendee.objects.create(event=event, user=user, rsvp_status=rsvp_status)
+        return Response(EventAttendeeSerializer(attendee).data, status=201)
+
+    def put(self, request, event_id):
+        event = get_object_or_404(Event, pk=event_id)
+        user = request.user
+
+        if event.start <= now():
+            return Response({"error": "Cannot change RSVP for past events."}, status=400)
+
+        attendee = get_object_or_404(EventAttendee, event=event, user=user)
+        attendee.rsvp_status = request.data.get("rsvp_status", attendee.rsvp_status)
+        attendee.save()
+        return Response(EventAttendeeSerializer(attendee).data)
+
+class EventAttendeesView(APIView):
+    def get(self, request, event_id):
+        attendees = EventAttendee.objects.filter(event_id=event_id)
+        serializer = EventAttendeeSerializer(attendees, many=True)
+        return Response(serializer.data)
+
+class EventUpdateView(APIView):
+    def put(self, request, event_id):
+        event = get_object_or_404(Event, pk=event_id)
+
+        if request.user != event.organizer:
+            return Response({"error": "Only the event organizer can update this event."}, status=403)
+
+        event.location = request.data.get("location", event.location)
+        event.start = request.data.get("start", event.start)
+        event.end = request.data.get("end", event.end)
+        event.capacity = request.data.get("capacity", event.capacity)
+        event.save()
+
+        attendees = EventAttendee.objects.filter(event=event).exclude(user=request.user)
+        for attendee in attendees:
+            Notification.objects.create(
+                user=attendee.user,
+                type="Event",
+                content=f"The event '{event.title}' has been updated."
+            )
+
+        return Response(EventSerializer(event).data)
+
+class JoinGroupView(APIView):
+    def post(self, request, group_id):
+        user_id = request.data.get('user_id')
+        user = User.objects.get(user_id=user_id)
+        group = Group.objects.get(id=group_id)
+
+        if group.is_public:
+            GroupMember.objects.create(user=user, group=group, role="member", joined_at=now())
+            return Response({"message": "Joined group successfully!"}, status=status.HTTP_201_CREATED)
+        else:
+            GroupMember.objects.create(user=user, group=group, role="pending_request")
+            return Response({"message": "Request sent to join group. Awaiting moderator approval."}, status=status.HTTP_202_ACCEPTED)
+
+# 2. Approve Member
+class ApproveRequestView(APIView):
+    def post(self, request, group_id, user_id):
+        approver = request.user
+        group = Group.objects.get(id=group_id)
+
+        approver_member = GroupMember.objects.filter(user=approver, group=group, role="moderator").first()
+        if not approver_member:
+            return Response({"error": "Only moderators can approve requests."}, status=status.HTTP_403_FORBIDDEN)
+
+        member = GroupMember.objects.filter(user_id=user_id, group=group, role="pending_request").first()
+        if member:
+            member.role = "member"
+            member.joined_at = now()
+            member.save()
+            return Response({"message": "User approved successfully."})
+        return Response({"error": "No pending request found."}, status=status.HTTP_404_NOT_FOUND)
+
+# 3. Make Moderator
+class MakeModeratorView(APIView):
+    def post(self, request, group_id, user_id):
+        actor = request.user
+        group = Group.objects.get(id=group_id)
+
+        if not GroupMember.objects.filter(user=actor, group=group, role="moderator").exists():
+            return Response({"error": "Only moderators can promote."}, status=status.HTTP_403_FORBIDDEN)
+
+        member = GroupMember.objects.filter(user_id=user_id, group=group, role="member").first()
+        if member:
+            member.role = "moderator"
+            member.save()
+            return Response({"message": "User promoted to moderator."})
+        return Response({"error": "User is not eligible for promotion."}, status=status.HTTP_400_BAD_REQUEST)
+
+# 4. Create Group
+class CreateGroupView(APIView):
+    def post(self, request, user_id):
+        user = User.objects.get(user_id=user_id)
+        data = request.data
+        group = Group.objects.create(
+            name=data.get('name'),
+            description=data.get('description'),
+            is_public=data.get('is_public', True)
+        )
+        GroupMember.objects.create(user=user, group=group, role="moderator", joined_at=now())
+        return Response(GroupSerializer(group).data, status=status.HTTP_201_CREATED)
+
+# 5. Group Messaging
+class GroupMessageView(APIView):
+    def post(self, request, group_id, user_id):
+        user = User.objects.get(user_id=user_id)
+        group = Group.objects.get(id=group_id)
+
+        membership = GroupMember.objects.filter(user=user, group=group).first()
+        if not membership or membership.role == "pending_request":
+            return Response({"error": "You must be a group member to message."}, status=status.HTTP_403_FORBIDDEN)
+
+        message = request.data.get("message")
+        if not message:
+            return Response({"error": "Message cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_entry = {
+            "sender_id": user.user_id,
+            "message": message,
+            "timestamp": str(now())
+        }
+
+        group.chat.append(new_entry)
+        group.save()
+
+        # Notify other members
+        members = GroupMember.objects.filter(group=group).exclude(user=user)
+        for m in members:
+            Notification.objects.create(
+                user=m.user,
+                type="GroupMessage",
+                content=f"New message in {group.name} from {user.name}"
+            )
+
+        return Response({"message": "Message sent!"})
+
+# 6. List All Groups
+class ListGroupsView(APIView):
+    def get(self, request):
+        groups = Group.objects.all()
+        return Response(GroupSerializer(groups, many=True).data)
+
+# 7. List My Approved Groups
+class ApprovedGroupsView(APIView):
+    def get(self, request, user_id):
+        approved_groups = GroupMember.objects.filter(
+            user_id=user_id, role__in=["moderator", "member"]
+        ).values_list("group", flat=True)
+        groups = Group.objects.filter(id__in=approved_groups)
+        return Response(GroupSerializer(groups, many=True).data)
+
+class KickMemberView(APIView):
+    def post(self, request, group_id, user_id):
+        actor = request.user
+        group = Group.objects.get(id=group_id)
+
+        if not GroupMember.objects.filter(user=actor, group=group, role="moderator").exists():
+            return Response({"error": "Only moderators can kick members."}, status=status.HTTP_403_FORBIDDEN)
+
+        GroupMember.objects.filter(user_id=user_id, group=group).delete()
+        return Response({"message": "Member has been removed from the group."})
+
+
+class StudentMentorshipAPI(APIView):
+    """API for students to apply for mentorship"""
+    
+    def post(self, request, user_id=None):
+        """Student applies for mentorship"""
+        # Get the student based on user_id
+        user = get_object_or_404(User, pk=user_id)
+        student = get_object_or_404(Student, user=user)
+        
+        # Check if student already applied
+        existing_application = MentorshipApplication.objects.filter(student=student).exists()
+        if existing_application:
+            return Response(
+                {"error": "You have already applied for mentorship."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create application
+        application = MentorshipApplication.objects.create(
+            student=student,
+            applied_at=now()
+        )
+        
+        # Notify all alumni who have mentoring_interest=True
+        interested_alumni = Alumnus.objects.filter(mentoring_interest=True)
+        for alumnus in interested_alumni:
+            Notification.objects.create(
+                user=alumnus.user,
+                type="Mentorship",
+                content=f"New mentorship application from {user.name}"
+            )
+        
+        return Response(
+            MentorshipApplicationSerializer(application).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    def delete(self, request, user_id=None):
+        """Student withdraws mentorship application"""
+        user = get_object_or_404(User, pk=user_id)
+        student = get_object_or_404(Student, user=user)
+        application = get_object_or_404(MentorshipApplication, student=student)
+        
+        application.delete()
+        return Response(
+            {"message": "Your mentorship application has been withdrawn."},
+            status=status.HTTP_200_OK
+        )
+
+
+class AlumniMentorshipAPI(APIView):
+    """API for alumni to view and accept mentorship applications"""
+    
+    def get(self, request, user_id=None):
+        """Get list of all students who have applied for mentorship"""
+        # Verify the user is an alumnus
+        user = get_object_or_404(User, pk=user_id)
+        get_object_or_404(Alumnus, user=user)
+        
+        # Get all mentorship applications
+        applications = MentorshipApplication.objects.all()
+        students = [app.student for app in applications]
+        
+        # Return list of students with applications
+        return Response(
+            StudentSerializer(students, many=True).data,
+            status=status.HTTP_200_OK
+        )
+    
+    def post(self, request, user_id=None, application_id=None):
+        """Accept a student as mentee based on application_id"""
+        if not application_id:
+            return Response(
+                {"error": "Application ID is required."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verify the user is an alumnus
+        user = get_object_or_404(User, pk=user_id)
+        alumnus = get_object_or_404(Alumnus, user=user)
+        
+        # Get the application and associated student
+        application = get_object_or_404(MentorshipApplication, pk=application_id)
+        student = application.student
+        
+        # Create mentorship match
+        match = MentorshipMatch.objects.create(
+            mentor=alumnus,
+            mentee=student,
+            status='Active',
+            created_at=now()
+        )
+        
+        # Create connection between mentor and mentee
+        Connection.objects.create(
+            user1=user,
+            user2=student.user,
+            connected_at=now()
+        )
+        
+        # Delete the application since it's been accepted
+        application.delete()
+        
+        # Notify the student
+        Notification.objects.create(
+            user=student.user,
+            type="Mentorship",
+            content=f"{user.name} has accepted your mentorship application!"
+        )
+        
+        return Response(
+            MentorshipMatchSerializer(match).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class MentorshipStatusAPI(APIView):
+    """API for handling active mentorships"""
+    
+    def get(self, request, user_id=None):
+        """Get all active mentorships for user with user_id"""
+        user = get_object_or_404(User, pk=user_id)
+        
+        # Try to get as student
+        student = Student.objects.filter(user=user).first()
+        if student:
+            mentorships = MentorshipMatch.objects.filter(mentee=student)
+            return Response(
+                MentorshipMatchSerializer(mentorships, many=True).data,
+                status=status.HTTP_200_OK
+            )
+        
+        # Try to get as alumnus
+        alumnus = Alumnus.objects.filter(user=user).first()
+        if alumnus:
+            mentorships = MentorshipMatch.objects.filter(mentor=alumnus)
+            return Response(
+                MentorshipMatchSerializer(mentorships, many=True).data,
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            {"error": "User is neither student nor alumnus."}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    def post(self, request, user_id=None, match_id=None):
+        """Update mentorship status (complete/cancel)"""
+        if not match_id:
+            return Response(
+                {"error": "Match ID is required."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        action = request.data.get('action')
+        if action not in ['complete', 'cancel']:
+            return Response(
+                {"error": "Valid actions are 'complete' or 'cancel'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get the user
+        user = get_object_or_404(User, pk=user_id)
+        
+        # Get mentorship match
+        match = get_object_or_404(MentorshipMatch, pk=match_id)
+        
+        # Verify current user is involved in this mentorship
+        if match.mentor.user.user_id != user.user_id and match.mentee.user.user_id != user.user_id:
+            return Response(
+                {"error": "You are not involved in this mentorship."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Update match status
+        if action == 'complete':
+            match.status = 'Completed'
+        else:
+            match.status = 'Cancelled'
+        
+        match.save()
+        
+        # Notify the other party
+        other_user = match.mentee.user if user.user_id == match.mentor.user.user_id else match.mentor.user
+        Notification.objects.create(
+            user=other_user,
+            type="Mentorship",
+            content=f"Your mentorship has been {match.status.lower()}." 
+        )
+        
+        return Response(
+            MentorshipMatchSerializer(match).data,
+            status=status.HTTP_200_OK
+        )
     
 
 class ShowMentorAPI(APIView):
@@ -199,61 +540,49 @@ class ViewConnectionsAPI(APIView):
         return Response(serializer.data)
     
 
-class MessageAPI(APIView):
+class MessageView(APIView):
+    
+    def get(self, request, user_id):
+        messages = Message.objects.filter(user1_id=user_id) | Message.objects.filter(user2_id=user_id)
+        users = []
+        for msg in messages:
+            other_user = msg.user2 if msg.user1.id == int(user_id) else msg.user1
+            users.append({
+                "user": UserSerializer(other_user).data,
+                "message_id": msg.id
+            })
+        return Response(users, status=status.HTTP_200_OK)
 
-    def get(self, request):
-        messages = Message.objects.filter(sender=request.user) | Message.objects.filter(receiver=request.user)
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
+class SendMessageView(APIView):
+    def post(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        sender_id = request.data.get("sender")
+        msg_text = request.data.get("message")
 
-    def post(self, request, sender_id, receiver_id):
-        # Check if the sender is the authenticated user
-        if sender_id != request.user.id:
-            return Response({"error": "You can only send messages from your own account."}, status=status.HTTP_403_FORBIDDEN)
+        if not sender_id or not msg_text:
+            return Response({"error": "Missing sender or message"}, status=status.HTTP_400_BAD_REQUEST)
 
-        receiver = get_object_or_404(User, pk=receiver_id)
+        message.chat_history.append({
+            "sender": sender_id,
+            "message": msg_text,
+            "timestamp": now().isoformat()
+        })
+        message.save()
 
-        # Check if there is a connection between sender and receiver
-        if not Connection.objects.filter(user1=request.user, user2=receiver).exists() and \
-           not Connection.objects.filter(user1=receiver, user2=request.user).exists():
-            return Response({"error": "You are not connected with the receiver."}, status=status.HTTP_403_FORBIDDEN)
-
-        message = Message.objects.create(
-            sender=request.user,
-            receiver=receiver,
-            content=request.data.get('content'),
-            name=request.data.get('name'),
-            description=request.data.get('description', ''),
-            is_public=request.data.get('is_public', True)
-        )
-
-        # Create a notification for the receiver
+        # Create a notification for the other user
+        recipient = message.user2 if message.user1.id == int(sender_id) else message.user1
         Notification.objects.create(
-            user=receiver,
+            user=recipient,
             type="Message",
-            content=f"Message from {request.user.name} at {now().strftime('%H:%M %d/%m/%Y')}"
+            content=f"New message from user {sender_id} at {now().strftime('%H:%M %d/%m/%Y')}"
         )
 
         return Response(MessageSerializer(message).data)
 
-    def get_received(self, request, user_id):
-        # List all received messages for the given user_id
-        if user_id != request.user.id:
-            return Response({"error": "You can only see your own received messages."}, status=status.HTTP_403_FORBIDDEN)
-
-        messages = Message.objects.filter(receiver=request.user)
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
-
-    def get_sent(self, request, user_id):
-        # List all sent messages for the given user_id
-        if user_id != request.user.id:
-            return Response({"error": "You can only see your own sent messages."}, status=status.HTTP_403_FORBIDDEN)
-
-        messages = Message.objects.filter(sender=request.user)
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
-
+class ViewMessage(APIView):
+    def get(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        return Response(MessageSerializer(message).data)
 
 
 class JobPostAPI(APIView):

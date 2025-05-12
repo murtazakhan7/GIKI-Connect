@@ -1,13 +1,19 @@
 from django.urls import path
 from .views import (
     NotificationAPI,
-    MentorshipMatchAPI,
-    AcceptMentorshipAPI,
-    MenteesListAPI,
+    StudentMentorshipAPI,
+    AlumniMentorshipAPI,    
+    MentorshipStatusAPI,
     ShowMentorAPI,
-    MessageAPI,
+    MessageView,
+    SendMessageView,
+    ViewMessage,
     JobPostAPI,
     AllJobPostsAPI,
+    EventListView,
+    RSVPEventView,
+    EventAttendeesView,
+    EventUpdateView,
     SignUpView,
     CreateProfileView,
     UpdateProfileView,
@@ -15,7 +21,15 @@ from .views import (
     SendConnectionRequestAPI,
     ManageConnectionRequestAPI,
     ViewReceivedRequestsAPI,
-    ViewConnectionsAPI
+    ViewConnectionsAPI,
+    GroupMessageView,
+    ListGroupsView,
+    CreateGroupView,
+    JoinGroupView,
+    MakeModeratorView,
+    KickMemberView,
+    ApprovedGroupsView,
+    ApproveRequestView, 
 )
 
 urlpatterns = [
@@ -25,11 +39,37 @@ urlpatterns = [
     path('notifications/read/<int:pk>/', NotificationAPI.as_view(), name='mark_notification_read'),
     
     # Mentorship endpoints
-    path('mentorship/match/', MentorshipMatchAPI.as_view(), name='mentorship_match'),
-    path('mentorship/accept/<int:user_id>/', AcceptMentorshipAPI.as_view(), name='accept_mentorship'),
-    path('mentorship/mentees/', MenteesListAPI.as_view(), name='mentees_list'),
-    path('mentorship/mentor/<int:user_id>/', ShowMentorAPI.as_view(), name='show_mentor'),
+    path('mentorship/apply/<int:user_id>/', StudentMentorshipAPI.as_view(), name='apply_for_mentorship'),
+    path('mentorship/withdraw/<int:user_id>/', StudentMentorshipAPI.as_view(), name='withdraw_mentorship_application'),
     
+    # Alumni mentorship endpoints
+    path('mentorship/applications/<int:user_id>/', AlumniMentorshipAPI.as_view(), name='view_mentorship_applications'),
+    path('mentorship/accept/<int:user_id>/<int:application_id>/', AlumniMentorshipAPI.as_view(), name='accept_mentorship'),
+    
+    # Mentorship status endpoints - for both students and alumni
+    path('mentorship/status/<int:user_id>/', MentorshipStatusAPI.as_view(), name='view_active_mentorships'),
+    path('mentorship/status/<int:user_id>/<int:match_id>/', MentorshipStatusAPI.as_view(), name='update_mentorship_status'),
+    path('mentorship/getmentor/<int:user_id>/',ShowMentorAPI.as_view(), name='get_mentor'),
+
+     # Event endpoints
+    path('events/', EventListView.as_view(), name='list_events'),
+    path('events/<int:event_id>/rsvp/', RSVPEventView.as_view(), name='rsvp_event'),
+    path('events/<int:event_id>/attendees/', EventAttendeesView.as_view(), name='event_attendees'),
+    path('events/<int:event_id>/update/', EventUpdateView.as_view(), name='update_event'),
+
+     # Group endpoints
+    path('group/join/<int:group_id>/', JoinGroupView.as_view(), name='join_group'),
+    path('group/approve/<int:group_id>/<int:user_id>/', ApproveRequestView.as_view(), name='approve_request'),
+    path('group/make_moderator/<int:group_id>/<int:user_id>/', MakeModeratorView.as_view(), name='make_moderator'),
+    path('group/kick/<int:group_id>/<int:user_id>/', KickMemberView.as_view(), name='kick_member'),
+
+    # Group creation and messaging
+    path('group/create/<int:user_id>/', CreateGroupView.as_view(), name='create_group'),
+    path('group/message/<int:group_id>/<int:user_id>/', GroupMessageView.as_view(), name='group_message'),
+
+    # Group listing and retrieval
+    path('group/list/', ListGroupsView.as_view(), name='list_groups'),
+    path('group/approved/<int:user_id>/', ApprovedGroupsView.as_view(), name='approved_groups'),
     # Connection endpoints
     path('connections/send/<int:sender_id>/<int:receiver_id>/',  SendConnectionRequestAPI.as_view(),  name='send_connection_request'),
     path('connections/sent/<int:user_id>/', SendConnectionRequestAPI.as_view(), name='view_sent_requests'),
@@ -38,11 +78,10 @@ urlpatterns = [
     path('connections/list/<int:user_id>/', ViewConnectionsAPI.as_view(), name='view_all_connections'),
     
     # Message endpoints
-    path('messages/', MessageAPI.as_view(), name='messages_list'),
-    path('messages/send/<int:sender_id>/<int:receiver_id>/', MessageAPI.as_view(), name='send_message'),
-    path('messages/received/<int:user_id>/', MessageAPI.as_view(http_method_names=['get']), {'method': 'get_received'}, name='received_messages'),
-    path('messages/sent/<int:user_id>/', MessageAPI.as_view(http_method_names=['get']), {'method': 'get_sent'}, name='sent_messages'),
-    
+    path('messages/<int:user_id>/', MessageView.as_view(), name='list_messages'),  # List of users user can talk to
+    path('messages/send/<int:message_id>/', SendMessageView.as_view(), name='send_message'),  # Add new message to chat
+    path('messages/view/<int:message_id>/', ViewMessage.as_view(), name='view_message'),  # View full conversation
+
     # Job post endpoints
     path('jobs/', JobPostAPI.as_view(), name='jobs_list'),
     path('jobs/create/<int:user_id>/', JobPostAPI.as_view(), name='create_job'),
