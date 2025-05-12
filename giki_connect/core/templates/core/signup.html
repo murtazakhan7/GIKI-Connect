@@ -1,15 +1,31 @@
-{% extends 'layout.html' %}
+{% extends 'core/layout.html' %}
 {% load static %}
 
 {% block CSS %}
 <link rel="stylesheet" href="{% static 'core/sign_up.css' %}">
+<style>
+    .signin-link {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .signin-link a {
+        color: #2c5282;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s;
+    }
+    .signin-link a:hover {
+        color: #1a365d;
+        text-decoration: underline;
+    }
+</style>
 {% endblock %}
-
-{% block body %}
 
 {% block JS %}
 <script src="{% static 'core/role_toggle.js' %}" defer></script>
 {% endblock %}
+
+{% block body %}
 
 <div>
     <h1>Welcome to GIKI-Connect</h1>
@@ -19,8 +35,17 @@
 </div> -->
 
 <h2>Sign Up</h2>
-<form action="./submit" method="post">
+<form action="{% url 'core:signup' %}" method="post">
     {% csrf_token %}
+
+    <!-- Display any form errors -->
+    {% if errors %}
+    <div class="form-errors">
+        {% for key, error in errors.items %}
+            <p class="error-message">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div>
         <label for="role"><strong>Role</strong></label>
@@ -87,4 +112,7 @@
         <input type="submit" value="Submit">
     </div>
 </form>
+<div class="signin-link">
+    <a href="{% url 'core:signin' %}">Already Have an Account? Sign In</a>
+</div>
 {% endblock %}

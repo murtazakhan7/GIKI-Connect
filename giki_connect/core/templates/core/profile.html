@@ -1,64 +1,43 @@
 {% extends 'layout.html' %}
 {% load static %}
 
-{% block extra_css %}
+{% block CSS %}
 <link rel="stylesheet" href="{% static 'core/profile.css' %}">
 {% endblock %}
 
-{% block content %}
+{% block body %}
 <div class="profile-container">
     <div class="profile-header">
-        <h1>My Profile</h1>
+        <h1>Profile</h1>
+        {% if profile %}
         <div class="profile-actions">
-            <a href="{% url 'update_profile' user.user_id %}" class="btn btn-primary">Edit Profile</a>
+            <a href="{% url 'core:update_profile' profile.profile_id %}" class="btn btn-primary">Edit Profile</a>
         </div>
+        {% endif %}
     </div>
 
     <div class="profile-content">
+        {% if errors %}
+        <div class="errors">
+            {% for key, error in errors.items %}
+            <p class="error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if profile %}
         <div class="profile-info">
             <div class="profile-section">
                 <h2>Personal Information</h2>
                 <div class="info-item">
                     <span class="label">Name:</span>
-                    <span class="value">{{ user.name }}</span>
+                    <span class="value">{{ profile.user.name }}</span>
                 </div>
                 <div class="info-item">
                     <span class="label">Email:</span>
-                    <span class="value">{{ user.mail }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Role:</span>
-                    <span class="value">{{ user.role }}</span>
+                    <span class="value">{{ profile.user.email }}</span>
                 </div>
                 
-                {% if user.role == 'Student' %}
-                <div class="info-item">
-                    <span class="label">Major:</span>
-                    <span class="value">{{ user.student.major }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Graduation Year:</span>
-                    <span class="value">{{ user.student.graduation_year }}</span>
-                </div>
-                {% elif user.role == 'Alumnus' %}
-                <div class="info-item">
-                    <span class="label">Employer:</span>
-                    <span class="value">{{ user.alumnus.employer }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Job Title:</span>
-                    <span class="value">{{ user.alumnus.job_title }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Mentoring Interest:</span>
-                    <span class="value">{% if user.alumnus.mentoring_interest %}Yes{% else %}No{% endif %}</span>
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="profile-section">
-                <h2>Profile Details</h2>
-                {% if profile %}
                 <div class="info-item">
                     <span class="label">Bio:</span>
                     <p class="value bio-text">{{ profile.bio }}</p>
@@ -77,63 +56,22 @@
                         {% endfor %}
                     </div>
                 </div>
-                {% else %}
-                <p class="no-profile">You haven't created a profile yet. <a href="{% url 'create_profile' user.user_id %}">Create one now</a>.</p>
-                {% endif %}
             </div>
         </div>
 
         <div class="profile-sidebar">
-            <div class="profile-section stats-section">
-                <h2>Network Stats</h2>
-                <div class="stat-item">
-                    <span class="stat-value">{{ connection_count }}</span>
-                    <span class="stat-label">Connections</span>
-                </div>
-                {% if user.role == 'Student' %}
-                <div class="stat-item">
-                    <span class="stat-value">{{ mentorship_count }}</span>
-                    <span class="stat-label">Mentors</span>
-                </div>
-                {% elif user.role == 'Alumnus' %}
-                <div class="stat-item">
-                    <span class="stat-value">{{ mentee_count }}</span>
-                    <span class="stat-label">Mentees</span>
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="profile-section recent-activity">
-                <h2>Recent Activity</h2>
-                {% if recent_posts %}
-                <ul class="activity-list">
-                    {% for post in recent_posts %}
-                    <li class="activity-item">
-                        <span class="activity-time">{{ post.timestamp|timesince }} ago</span>
-                        <p class="activity-content">{{ post.content_text|truncatechars:100 }}</p>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="no-data">No recent activity</p>
-                {% endif %}
-            </div>
-
             <div class="quick-links">
                 <h2>Quick Links</h2>
                 <ul>
-                    <li><a href="{% url 'connections' %}">Manage Connections</a></li>
-                    {% if user.role == 'Student' %}
-                    <li><a href="#">Find Mentors</a></li>
-                    {% elif user.role == 'Alumnus' %}
-                    <li><a href="#">Manage Mentees</a></li>
-                    <li><a href="#">Post Job</a></li>
-                    {% endif %}
-                    <li><a href="#">Messages</a></li>
-                    <li><a href="#">Events</a></li>
+                    <li><a href="{% url 'core:view_all_connections' profile.user.user_id %}">Manage Connections</a></li>
+                    <li><a href="{% url 'core:list_messages' profile.user.user_id %}">Messages</a></li>
+                    <li><a href="{% url 'core:list_events' %}">Events</a></li>
                 </ul>
             </div>
         </div>
+        {% else %}
+        <p class="no-profile">Profile not found.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

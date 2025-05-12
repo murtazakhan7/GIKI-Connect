@@ -1,4 +1,4 @@
-{% extends 'layout.html' %}
+{% extends 'core/layout.html' %}
 {% load static %}
 
 {% block CSS %}
@@ -25,7 +25,7 @@
 
     <div id="create-event" class="tab-content active">
         <h2>Create New Event</h2>
-        <form action="./event/create" method="post" class="event-form">
+        <form action="{% url 'core:create_event' %}" method="post" class="event-form">
             {% csrf_token %}
             
             <div class="form-group">
@@ -98,7 +98,7 @@
             <div class="modal-content">
                 <span class="close-modal">&times;</span>
                 <h3>Update Event</h3>
-                <form id="update-event-form" action="./event/update" method="post">
+                <form id="update-event-form" action="{% url 'core:update_event' event.event_id|default:0 %}" method="post">
                     {% csrf_token %}
                     <input type="hidden" id="update-event-id" name="event_id">
                     

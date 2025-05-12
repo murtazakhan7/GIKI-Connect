@@ -7,6 +7,8 @@ from .views import ( NotificationAPI, StudentMentorshipAPI, AlumniMentorshipAPI,
                     CreatePostView, AllPostsView, UserPostsView, PostDetailView, DeletePostView, CommentAPI, PostCommentsAPI, 
                     SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView, SignOutView )
 
+app_name = 'core'
+
 urlpatterns = [
     # Notification endpoints
     path('notifications/', NotificationAPI.as_view(), name='notifications_list'),

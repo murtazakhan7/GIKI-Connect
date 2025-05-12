@@ -1,4 +1,3 @@
-
 {% extends 'layout.html' %}
 {% load static %}
 
@@ -20,21 +19,16 @@
             <button id="new-message-btn" class="btn btn-primary">New Message</button>
         </div>
         <div class="conversation-list">
-            {% for conversation in conversations %}
-                <div class="conversation-item {% if conversation.has_unread %}unread{% endif %}" 
-                     data-user-id="{{ conversation.user.user_id }}">
+            {% for user in users %}
+                <div class="conversation-item" 
+                     data-user-id="{{ user.user.user_id }}"
+                     data-message-id="{{ user.message_id }}">
                     <div class="user-avatar">
-                        <span>{{ conversation.user.name|first }}</span>
+                        <span>{{ user.user.name|first }}</span>
                     </div>
                     <div class="conversation-info">
-                        <h3>{{ conversation.user.name }}</h3>
-                        <p class="last-message">{{ conversation.last_message.content|truncatechars:30 }}</p>
-                    </div>
-                    <div class="conversation-meta">
-                        <span class="timestamp">{{ conversation.last_message.timestamp|date:"M d" }}</span>
-                        {% if conversation.unread_count %}
-                            <span class="unread-badge">{{ conversation.unread_count }}</span>
-                        {% endif %}
+                        <h3>{{ user.user.name }}</h3>
+                        <p class="last-message">{{ user.user.email }}</p>
                     </div>
                 </div>
             {% empty %}
@@ -66,12 +60,24 @@
             
             <div class="messages-list" id="messages-list">
                 <!-- Messages will be loaded dynamically -->
+                {% if message %}
+                    {% for chat in message.chat_history %}
+                        <div class="message {% if chat.sender == user.user_id %}sent{% else %}received{% endif %}">
+                            <div class="message-content">
+                                <p>{{ chat.message }}</p>
+                                <span class="message-time">{{ chat.timestamp }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
             
             <div class="message-composer">
-                <form id="message-form">
-                    <input type="hidden" id="receiver-id" name="receiver_id">
-                    <textarea id="message-content" name="content" placeholder="Type a message..."></textarea>
+                <form id="message-form" action="{% url 'core:send_message' message.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" id="sender-id" name="sender">
+                    <input type="hidden" id="message-id" name="message_id">
+                    <textarea id="message-content" name="message" placeholder="Type a message..."></textarea>
                     <button type="submit" class="btn btn-primary send-btn">
                         <i class="fas fa-paper-plane"></i>
                     </button>
