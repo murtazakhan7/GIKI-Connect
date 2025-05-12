@@ -1,0 +1,205 @@
+{% extends 'core/layout.html' %}
+{% load static %}
+
+{% block CSS %}
+    <link rel="stylesheet" href="{% static 'core/posts.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="posts-container">
+    <div class="posts-header">
+        <h1>Recent Posts</h1>
+        <div class="search-bar">
+            <form method="GET" action="{% url 'posts' %}">
+                <input type="text" name="search" placeholder="Search posts..." value="{{ request.GET.search|default_if_none:'' }}">
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="posts-filters">
+        <a href="{% url 'posts' %}" class="filter-btn {% if not category %}active{% endif %}">All Posts</a>
+        <a href="{% url 'posts' %}?category=Opportunities" class="filter-btn {% if category == 'Opportunities' %}active{% endif %}">Opportunities</a>
+        <a href="{% url 'posts' %}?category=Announcements" class="filter-btn {% if category == 'Announcements' %}active{% endif %}">Announcements</a>
+    </div>
+
+    <!-- Create Post Card -->
+    {% if user.is_authenticated %}
+    <div class="create-post-card">
+        <div class="create-post-header">
+            <div class="create-post-avatar">
+                {% if user.profile_image %}
+                    <img src="{{ user.profile_image.url }}" alt="{{ user.name }}">
+                {% else %}
+                    <img src="{% static 'images/default_avatar.png' %}" alt="{{ user.name }}">
+                {% endif %}
+            </div>
+            <h3>Create a Post</h3>
+        </div>
+        <form method="POST" action="{% url 'create_post' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <textarea name="content_text" class="create-post-input" placeholder="What's on your mind?"></textarea>
+            <div class="create-post-actions">
+                <label class="attachment-btn">
+                    <input type="file" name="media_url" style="display: none;">
+                    <i class="fas fa-image"></i> Photo
+                </label>
+                <button type="submit" class="post-btn">Post</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="posts-grid">
+        {% if posts %}
+            {% for post in posts %}
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="post-avatar">
+                        {% if post.author_id.profile_image %}
+                            <img src="{{ post.author_id.profile_image.url }}" alt="{{ post.author_id.name }}">
+                        {% else %}
+                            <img src="{% static 'images/default_avatar.png' %}" alt="{{ post.author_id.name }}">
+                        {% endif %}
+                    </div>
+                    <div class="post-user-info">
+                        <h3>{{ post.author_id.name }}</h3>
+                        <div class="details">
+                            {% if post.author_id.role == 'Alumni' %}
+                                Alumni - {{ post.author_id.department }}, {{ post.author_id.graduation_year }}
+                            {% else %}
+                                {{ post.author_id.role }} - {{ post.author_id.department }}
+                            {% endif %}
+                            • {{ post.timestamp|timesince }} ago
+                        </div>
+                    </div>
+                    
+                    {% if user.id == post.author_id.id %}
+                    <div class="post-actions-dropdown">
+                        <button class="dropdown-btn"><i class="fas fa-ellipsis-v"></i></button>
+                        <div class="dropdown-content">
+                            <a href="{% url 'edit_post' post.post_id %}">Edit</a>
+                            <form method="POST" action="{% url 'delete_post' post.post_id %}">
+                                {% csrf_token %}
+                                <button type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="post-content">
+                    <p class="post-text">{{ post.content_text }}</p>
+                    {% if post.media_url %}
+                        <img src="{{ post.media_url.url }}" class="post-image" alt="Post image">
+                    {% endif %}
+                </div>
+                
+                <div class="post-stats">
+                    <span>{{ post.likes.count }} likes</span>
+                    <span>{{ post.comments.count }} comments</span>
+                    <span>{{ post.shares.count }} shares</span>
+                </div>
+                
+                <div class="post-actions">
+                    <form method="POST" action="{% url 'like_post' post.post_id %}" class="like-form">
+                        {% csrf_token %}
+                        <button type="submit" class="post-action-btn like-btn {% if user in post.likes.all %}liked{% endif %}">
+                            <i class="{% if user in post.likes.all %}fas{% else %}far{% endif %} fa-thumbs-up"></i> Like
+                        </button>
+                    </form>
+                    <button class="post-action-btn comment-btn" onclick="toggleComments('{{ post.post_id }}')">
+                        <i class="far fa-comment"></i> Comment
+                    </button>
+                    <form method="POST" action="{% url 'share_post' post.post_id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="post-action-btn">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Comments Section -->
+                <div class="comments-section" id="comments-{{ post.post_id }}">
+                    {% for comment in post.comment_set.all %}
+                    <div class="comment">
+                        <div class="comment-avatar">
+                            {% if comment.author_id.profile_image %}
+                                <img src="{{ comment.author_id.profile_image.url }}" alt="{{ comment.author_id.name }}">
+                            {% else %}
+                                <img src="{% static 'images/default_avatar.png' %}" alt="{{ comment.author_id.name }}">
+                            {% endif %}
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-user">{{ comment.author_id.name }}</span>
+                                <span class="comment-time">{{ comment.timestamp|timesince }} ago</span>
+                            </div>
+                            <p class="comment-text">{{ comment.text }}</p>
+                            <div class="comment-actions">
+                                <span class="comment-action">Like</span>
+                                <span class="comment-action">Reply</span>
+                                
+                                {% if user.id == comment.author_id.id %}
+                                <div class="comment-edit-delete">
+                                    <a href="{% url 'edit_comment' comment.comment_id %}" class="comment-action">Edit</a>
+                                    <form method="POST" action="{% url 'delete_comment' comment.comment_id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="comment-action delete-btn">Delete</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if user.is_authenticated %}
+                    <div class="add-comment">
+                        <div class="add-comment-avatar">
+                            {% if user.profile_image %}
+                                <img src="{{ user.profile_image.url }}" alt="{{ user.name }}">
+                            {% else %}
+                                <img src="{% static 'images/default_avatar.png' %}" alt="{{ user.name }}">
+                            {% endif %}
+                        </div>
+                        <form method="POST" action="{% url 'add_comment' post.post_id %}" class="comment-form">
+                            {% csrf_token %}
+                            <input type="text" name="text" class="add-comment-input" placeholder="Write a comment...">
+                            <button type="submit" hidden>Submit</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-posts">
+                <p>No posts found. Be the first to create a post!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if posts.has_other_pages %}
+    <div class="pagination">
+        {% if posts.has_previous %}
+            <a href="?page={{ posts.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="pagination-btn">Previous</a>
+        {% else %}
+            <button class="pagination-btn" disabled>Previous</button>
+        {% endif %}
+        
+        <span class="page-number">Page {{ posts.number }} of {{ posts.paginator.num_pages }}</span>
+        
+        {% if posts.has_next %}
+            <a href="?page={{ posts.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="pagination-btn">Next</a>
+        {% else %}
+            <button class="pagination-btn" disabled>Next</button>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block JS %}
+    <script src="{% static 'js/posts.js' %}"></script>
+{% endblock %}

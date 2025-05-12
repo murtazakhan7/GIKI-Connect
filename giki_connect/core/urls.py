@@ -32,6 +32,8 @@ from .views import (
     ApproveRequestView, 
 )
 
+app_name = 'core'
+
 urlpatterns = [
     # Notification endpoints
     path('notifications/', NotificationAPI.as_view(), name='notifications_list'),
@@ -53,6 +55,7 @@ urlpatterns = [
 
      # Event endpoints
     path('events/', EventListView.as_view(), name='list_events'),
+    path('events/create/', EventListView.as_view(), name='create_event'),
     path('events/<int:event_id>/rsvp/', RSVPEventView.as_view(), name='rsvp_event'),
     path('events/<int:event_id>/attendees/', EventAttendeesView.as_view(), name='event_attendees'),
     path('events/<int:event_id>/update/', EventUpdateView.as_view(), name='update_event'),
@@ -89,6 +92,7 @@ urlpatterns = [
     
     # User and profile endpoints
     path('signup/', SignUpView.as_view(), name='signup'),
+    path('signin/', SignUpView.as_view(), name='signin'),  # Using SignUpView for signin too since there's no separate SignInView
     path('profile/create/<int:user_id>/', CreateProfileView.as_view(), name='create_profile'),
     path('profile/update/<int:profile_id>/', UpdateProfileView.as_view(), name='update_profile'),
     path('profile/<int:profile_id>/', GetProfileView.as_view(), name='get_profile'),

@@ -38,7 +38,7 @@
                             {% endif %}
                             
                             <div class="connection-actions">
-                                <a href="{% url 'get_profile' connection.user_id %}" class="btn btn-outline">View Profile</a>
+                                <a href="{% url 'core:get_profile' connection.user_id %}" class="btn btn-outline">View Profile</a>
                                 <a href="#" class="btn btn-outline message-btn" data-userid="{{ connection.user_id }}">Message</a>
                                 {% if connection.role == 'Alumnus' and user.role == 'Student' and connection.alumnus.mentoring_interest %}
                                     <a href="#" class="btn btn-outline request-mentor-btn" data-userid="{{ connection.user_id }}">Request Mentorship</a>
@@ -74,7 +74,7 @@
                             <p class="request-time">Requested {{ request.requested_at|timesince }} ago</p>
                             
                             <div class="request-actions">
-                                <a href="{% url 'get_profile' request.from_user.user_id %}" class="btn btn-outline">View Profile</a>
+                                <a href="{% url 'core:get_profile' request.from_user.user_id %}" class="btn btn-outline">View Profile</a>
                                 <button class="btn btn-primary accept-btn" data-requestid="{{ request.request_id }}">Accept</button>
                                 <button class="btn btn-danger decline-btn" data-requestid="{{ request.request_id }}">Decline</button>
                             </div>
@@ -107,7 +107,7 @@
                             <p class="request-time">Sent {{ request.requested_at|timesince }} ago</p>
                             
                             <div class="request-actions">
-                                <a href="{% url 'get_profile' request.to_user.user_id %}" class="btn btn-outline">View Profile</a>
+                                <a href="{% url 'core:get_profile' request.to_user.user_id %}" class="btn btn-outline">View Profile</a>
                                 <button class="btn btn-danger cancel-btn" data-requestid="{{ request.request_id }}">Cancel Request</button>
                             </div>
                         </div>
@@ -141,7 +141,7 @@
                             {% endif %}
                             
                             <div class="suggestion-actions">
-                                <a href="{% url 'get_profile' suggestion.user_id %}" class="btn btn-outline">View Profile</a>
+                                <a href="{% url 'core:get_profile' suggestion.user_id %}" class="btn btn-outline">View Profile</a>
                                 <button class="btn btn-primary connect-btn" data-userid="{{ suggestion.user_id }}">Connect</button>
                             </div>
                         </div>
