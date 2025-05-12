@@ -136,6 +136,20 @@ input[type="submit"]:hover {
 input[type="submit"]:active {
     transform: translateY(1px);
 }
+.signin-link {
+    margin-top: 20px;
+    text-align: center;
+}
+.signin-link a {
+    color: #2c5282;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+.signin-link a:hover {
+    color: #1a365d;
+    text-decoration: underline;
+}
 
 /* Role-specific fields container styles */
 .role-specific-fields {
@@ -213,6 +227,8 @@ input[type="submit"]:active {
     margin-top: 5px;
     display: none;
 }
+
+
 
 /* Custom focus styles to ensure accessibility */
 *:focus {

@@ -14,6 +14,7 @@ urlpatterns = [
     path('notifications/', NotificationAPI.as_view(), name='notifications_list'),
     path('notifications/<int:user_id>/', NotificationAPI.as_view(), name='user_notifications'),
     path('notifications/read/<int:pk>/', NotificationAPI.as_view(), name='mark_notification_read'),
+    path('notifications/read-all/', NotificationAPI.as_view(), name='mark_all_notifications_read'),
     
     # Mentorship endpoints
     path('mentorship/apply/<int:user_id>/', StudentMentorshipAPI.as_view(), name='apply_for_mentorship'),
@@ -37,10 +38,15 @@ urlpatterns = [
 
      # Group endpoints
     path('group/join/<int:group_id>/', JoinGroupView.as_view(), name='join_group'),
+    path('group/cancel/<int:group_id>/', JoinGroupView.as_view(), name='cancel_join_request'),
     path('group/approve/<int:group_id>/<int:user_id>/', ApproveRequestView.as_view(), name='approve_request'),
     path('group/make_moderator/<int:group_id>/<int:user_id>/', MakeModeratorView.as_view(), name='make_moderator'),
     path('group/kick/<int:group_id>/<int:user_id>/', KickMemberView.as_view(), name='kick_member'),
-
+    path('group/reject/<int:group_id>/<int:user_id>/', ApproveRequestView.as_view(), name='reject_request'),
+    path('group/update/<int:group_id>/', CreateGroupView.as_view(), name='update_group'),
+    path('group/post/create/<int:group_id>/<int:user_id>/', GroupMessageView.as_view(), name='create_group_post'),
+    path('group/post/delete/<int:post_id>/', GroupMessageView.as_view(), name='delete_group_post'),
+    
     # Group creation and messaging
     path('group/create/<int:user_id>/', CreateGroupView.as_view(), name='create_group'),
     path('group/message/<int:group_id>/<int:user_id>/', GroupMessageView.as_view(), name='group_message'),
@@ -54,6 +60,8 @@ urlpatterns = [
     path('connections/manage/<int:request_id>/', ManageConnectionRequestAPI.as_view(), name='manage_connection_request'),
     path('connections/received/<int:receiver_id>/', ViewReceivedRequestsAPI.as_view(), name='view_received_requests'),
     path('connections/list/<int:user_id>/', ViewConnectionsAPI.as_view(), name='view_all_connections'),
+    path('connections/remove/<int:user_id>/<int:connection_id>/', ManageConnectionRequestAPI.as_view(), name='remove_connection'),
+    path('connections/cancel/<int:sender_id>/<int:receiver_id>/', ManageConnectionRequestAPI.as_view(), name='cancel_connection_request'),
     
     # Message endpoints
     path('messages/<int:user_id>/', MessageView.as_view(), name='list_messages'),  # List of users user can talk to
@@ -81,6 +89,7 @@ urlpatterns = [
     # User and profile endpoints
     path('signup/', SignUpView.as_view(), name='signup'),
     path('signin/', SignInView.as_view(), name='signin'),
+    path('logout/', SignInView.as_view(), name='logout'),
 
     # PROFILES
     path('profile/create/<int:user_id>/', CreateProfileView.as_view(), name='create_profile'),

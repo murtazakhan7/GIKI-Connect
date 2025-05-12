@@ -1,16 +1,454 @@
-{% extends 'layout.html' %}
+{% extends 'core/layout.html' %}
 {% load static %}
 
 
 {% block CSS %}
-<link rel="stylesheet" href="{% static 'core/messages.css' %}">
+<style>
+    .messages-container {
+        display: flex;
+        height: calc(100vh - 100px);
+        max-width: 1200px;
+        margin: 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar {
+        width: 300px;
+        background-color: white;
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .sidebar-header {
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .sidebar-header h2 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    
+    .conversation-list {
+        overflow-y: auto;
+        flex-grow: 1;
+    }
+    
+    .conversation-item {
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+    }
+    
+    .conversation-item:hover {
+        background-color: var(--accent-color);
+    }
+    
+    .conversation-item.active {
+        background-color: var(--accent-color);
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        margin-right: 15px;
+    }
+    
+    .conversation-info {
+        flex-grow: 1;
+    }
+    
+    .conversation-info h3 {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--text-color);
+    }
+    
+    .last-message {
+        margin: 5px 0 0;
+        font-size: 0.85rem;
+        color: var(--light-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .message-area {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f8f9fa;
+    }
+    
+    .empty-state-message {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--light-text);
+        margin-bottom: 20px;
+    }
+    
+    .conversation-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .conversation-header {
+        padding: 15px;
+        background-color: white;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .user-info h2 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    
+    .messages-list {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .message {
+        max-width: 70%;
+        margin-bottom: 15px;
+        display: flex;
+    }
+    
+    .message.sent {
+        align-self: flex-end;
+    }
+    
+    .message.received {
+        align-self: flex-start;
+    }
+    
+    .message-content {
+        padding: 10px 15px;
+        border-radius: 18px;
+        position: relative;
+    }
+    
+    .message.sent .message-content {
+        background-color: var(--primary-color);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message.received .message-content {
+        background-color: white;
+        border-bottom-left-radius: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        color: var(--light-text);
+        margin-top: 5px;
+        display: block;
+    }
+    
+    .message.sent .message-time {
+        text-align: right;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .message-composer {
+        padding: 15px;
+        background-color: white;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    #message-form {
+        display: flex;
+        align-items: center;
+    }
+    
+    #message-content {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        resize: none;
+        height: 40px;
+        margin-right: 10px;
+    }
+    
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 20px;
+        width: 500px;
+        max-width: 90%;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .close-modal {
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    
+    .search-results {
+        background-color: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 5px;
+    }
+    
+    .search-result-item {
+        padding: 10px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .search-result-item:hover {
+        background-color: var(--accent-color);
+    }
+    
+    @media (max-width: 768px) {
+        .messages-container {
+            flex-direction: column;
+            height: calc(100vh - 80px);
+        }
+        
+        .sidebar {
+            width: 100%;
+            height: 300px;
+        }
+    }
+</style>
 {% endblock %}
 
 
 {% block JS %}
-<script src="{% static 'core/messages.js' %}" defer></script>
-
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const conversationItems = document.querySelectorAll('.conversation-item');
+        const noConversationSelected = document.getElementById('no-conversation-selected');
+        const conversationView = document.getElementById('conversation-view');
+        const messagesList = document.getElementById('messages-list');
+        const receiverName = document.getElementById('receiver-name');
+        const receiverInitial = document.getElementById('receiver-initial');
+        const messageForm = document.getElementById('message-form');
+        const messageContent = document.getElementById('message-content');
+        const senderId = document.getElementById('sender-id');
+        const messageId = document.getElementById('message-id');
+        
+        // New message modal elements
+        const newMessageBtn = document.getElementById('new-message-btn');
+        const newMessageModal = document.getElementById('new-message-modal');
+        const closeModal = document.querySelector('.close-modal');
+        const newMessageForm = document.getElementById('new-message-form');
+        const receiverSearch = document.getElementById('receiver-search');
+        const searchResults = document.getElementById('user-search-results');
+        
+        // Set current user ID
+        const currentUserId = '{{ user.user_id }}';
+        senderId.value = currentUserId;
+        
+        // Handle conversation selection
+        conversationItems.forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from all items
+                conversationItems.forEach(i => i.classList.remove('active'));
+                
+                // Add active class to clicked item
+                this.classList.add('active');
+                
+                // Get user data
+                const userId = this.getAttribute('data-user-id');
+                const messageId = this.getAttribute('data-message-id');
+                const userName = this.querySelector('h3').textContent;
+                const userInitial = userName.charAt(0);
+                
+                // Update conversation view
+                receiverName.textContent = userName;
+                receiverInitial.textContent = userInitial;
+                document.getElementById('message-id').value = messageId;
+                
+                // Show conversation view, hide empty state
+                noConversationSelected.classList.add('hidden');
+                conversationView.classList.remove('hidden');
+                
+                // Load messages for this conversation
+                loadMessages(messageId);
+            });
+        });
+        
+        // Function to load messages
+        function loadMessages(messageId) {
+            // In a real app, you would fetch messages from the server
+            // For now, we'll just scroll to the bottom of the messages list
+            setTimeout(() => {
+                messagesList.scrollTop = messagesList.scrollHeight;
+            }, 100);
+        }
+        
+        // Handle message form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageContent.value.trim();
+            if (!message) return;
+            
+            // In a real app, you would send the message to the server
+            // For now, we'll just add it to the UI
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message sent';
+            messageElement.innerHTML = `
+                <div class="message-content">
+                    <p>${message}</p>
+                    <span class="message-time">Just now</span>
+                </div>
+            `;
+            
+            messagesList.appendChild(messageElement);
+            messageContent.value = '';
+            
+            // Scroll to the bottom
+            messagesList.scrollTop = messagesList.scrollHeight;
+            
+            // Submit the form
+            this.submit();
+        });
+        
+        // New message modal
+        if (newMessageBtn) {
+            newMessageBtn.addEventListener('click', function() {
+                newMessageModal.style.display = 'block';
+            });
+        }
+        
+        if (closeModal) {
+            closeModal.addEventListener('click', function() {
+                newMessageModal.style.display = 'none';
+            });
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === newMessageModal) {
+                newMessageModal.style.display = 'none';
+            }
+        });
+        
+        // Handle user search
+        if (receiverSearch) {
+            receiverSearch.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+                
+                // In a real app, you would search users from the server
+                // For now, we'll just show a placeholder
+                searchResults.innerHTML = `
+                    <div class="search-result-item" data-user-id="1">
+                        <div class="user-info">
+                            <h3>John Doe</h3>
+                            <p>john.doe@example.com</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Handle search result selection
+                const searchResultItems = document.querySelectorAll('.search-result-item');
+                searchResultItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        const userId = this.getAttribute('data-user-id');
+                        const userName = this.querySelector('h3').textContent;
+                        
+                        receiverSearch.value = userName;
+                        searchResults.innerHTML = '';
+                    });
+                });
+            });
+        }
+        
+        // Handle new message form submission
+        if (newMessageForm) {
+            newMessageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // In a real app, you would send the new message to the server
+                // For now, we'll just close the modal
+                newMessageModal.style.display = 'none';
+            });
+        }
+    });
+</script>
 {% endblock %}
+
 {% block body %}
 <div class="messages-container">
     <div class="sidebar">

@@ -1,0 +1,260 @@
+{% extends "core/layout.html" %}
+{% load static %}
+
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/groups_list.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="groups-container">
+    <div class="groups-header">
+        <h1>Groups</h1>
+        {% if user %}
+        <button class="btn btn-primary" onclick="openCreateGroupModal()">Create Group</button>
+        {% endif %}
+    </div>
+    
+    <div class="groups-tabs">
+        <div class="groups-tab active" data-tab="all-groups">All Groups</div>
+        {% if user %}
+        <div class="groups-tab" data-tab="my-groups">My Groups</div>
+        <div class="groups-tab" data-tab="managed-groups">Groups I Manage</div>
+        <div class="groups-tab" data-tab="pending-requests">Pending Requests</div>
+        {% endif %}
+    </div>
+    
+    <!-- All Groups Tab -->
+    <div class="groups-content active" id="all-groups">
+        <div class="groups-grid">
+            {% if groups %}
+                {% for group in groups %}
+                    <div class="card group-card">
+                        <div class="group-header">
+                            <h3 class="group-title">{{ group.name }}</h3>
+                            {% if group.is_public %}
+                                <span class="group-badge badge-public">Public</span>
+                            {% else %}
+                                <span class="group-badge badge-private">Private</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="group-body">
+                            <p class="group-description">{{ group.description }}</p>
+                            
+                            <div class="group-meta">
+                                <div class="group-members">
+                                    <i class="fas fa-users"></i>
+                                    <span>{{ group.members.count }} members</span>
+                                </div>
+                                <div class="group-created">
+                                    Created {{ group.created_at|timesince }} ago
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="group-footer">
+                            <span>Created by: {{ group.creator.username }}</span>
+                            
+                            {% if user %}
+                                <div class="group-actions">
+                                    {% if user in group.members.all %}
+                                        <a href="{% url 'core:group_message' group.id user.user_id %}" class="btn btn-primary">View Group</a>
+                                    {% elif user in group.pending_members.all %}
+                                        <button class="btn btn-outline" disabled>Request Pending</button>
+                                    {% else %}
+                                        <form action="{% url 'core:join_group' group.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                                            {% if group.is_public %}
+                                                <button type="submit" class="btn btn-primary">Join Group</button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-outline">Request to Join</button>
+                                            {% endif %}
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <p>No groups available.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if user %}
+    <!-- My Groups Tab -->
+    <div class="groups-content" id="my-groups">
+        <div class="groups-grid">
+            {% if my_groups %}
+                {% for group in my_groups %}
+                    <div class="card group-card">
+                        <div class="group-header">
+                            <h3 class="group-title">{{ group.name }}</h3>
+                            {% if group.is_public %}
+                                <span class="group-badge badge-public">Public</span>
+                            {% else %}
+                                <span class="group-badge badge-private">Private</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="group-body">
+                            <p class="group-description">{{ group.description }}</p>
+                            
+                            <div class="group-meta">
+                                <div class="group-members">
+                                    <i class="fas fa-users"></i>
+                                    <span>{{ group.members.count }} members</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="group-footer">
+                            <div class="group-actions">
+                                <a href="{% url 'core:group_message' group.id user.user_id %}" class="btn btn-primary">View Group</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <p>You haven't joined any groups yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Groups I Manage Tab -->
+    <div class="groups-content" id="managed-groups">
+        <div class="groups-grid">
+            {% if managed_groups %}
+                {% for group in managed_groups %}
+                    <div class="card group-card">
+                        <div class="group-header">
+                            <h3 class="group-title">{{ group.name }}</h3>
+                            {% if group.is_public %}
+                                <span class="group-badge badge-public">Public</span>
+                            {% else %}
+                                <span class="group-badge badge-private">Private</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="group-body">
+                            <p class="group-description">{{ group.description }}</p>
+                            
+                            <div class="group-meta">
+                                <div class="group-members">
+                                    <i class="fas fa-users"></i>
+                                    <span>{{ group.members.count }} members</span>
+                                </div>
+                                
+                                {% if group.pending_members.count > 0 %}
+                                <div class="group-pending">
+                                    <i class="fas fa-user-clock"></i>
+                                    <span>{{ group.pending_members.count }} pending</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="group-footer">
+                            <div class="group-actions">
+                                <a href="{% url 'core:group_message' group.id user.user_id %}" class="btn btn-outline">View Group</a>
+                                <button class="btn btn-primary" onclick="openManageGroupModal('{{ group.id }}')">Manage</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <p>You don't manage any groups.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Pending Requests Tab -->
+    <div class="groups-content" id="pending-requests">
+        <div class="groups-grid">
+            {% if pending_requests %}
+                {% for request in pending_requests %}
+                    <div class="card group-card">
+                        <div class="group-header">
+                            <h3 class="group-title">{{ request.group.name }}</h3>
+                        </div>
+                        
+                        <div class="group-body">
+                            <p class="group-description">{{ request.group.description }}</p>
+                            <p>Request sent: {{ request.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        
+                        <div class="group-footer">
+                            <span>Status: <strong>Pending</strong></span>
+                            <form action="{% url 'core:cancel_join_request' request.group.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline">Cancel Request</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <p>You don't have any pending group join requests.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Group Modal -->
+<div id="createGroupModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Create New Group</h2>
+            <button class="close-modal" onclick="closeCreateGroupModal()">&times;</button>
+        </div>
+        
+        <form action="{% url 'core:create_group' user.user_id %}" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="name">Group Name</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="description">Description</label>
+                <textarea id="description" name="description" class="form-control" rows="4" required></textarea>
+            </div>
+            
+            <div class="form-check">
+                <input type="checkbox" id="is_public" name="is_public" checked>
+                <label for="is_public">Make this group public (anyone can join)</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Create Group</button>
+        </form>
+    </div>
+</div>
+
+<!-- Manage Group Modal -->
+<div id="manageGroupModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Manage Group</h2>
+            <button class="close-modal" onclick="closeManageGroupModal()">&times;</button>
+        </div>
+        
+        <div id="manageGroupContent">
+            <!-- This content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block JS %}
+<script src="{% static 'core/groups_list.js' %}"></script>
+{% endblock %} 

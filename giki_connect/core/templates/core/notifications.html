@@ -1,133 +1,86 @@
-{% extends 'core/layout.html' %}
+{% extends "core/layout.html" %}
 {% load static %}
-
 
 {% block CSS %}
 <link rel="stylesheet" href="{% static 'core/notifications.css' %}">
 {% endblock %}
 
-{% block JS %}
-<script src="{% static 'core/notifications.js' %}" defer></script>
-{% endblock %}
-
 {% block body %}
 <div class="notifications-container">
-    <div class="notifications-header">
+    <div class="notification-header">
         <h1>Notifications</h1>
-        <div class="notification-actions">
-            <button id="mark-all-read" class="btn btn-sm btn-outline-primary">Mark all as read</button>
-            <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-toggle="dropdown" aria-expanded="false">
-                    Filter
-                </button>
-                <div class="dropdown-menu" aria-labelledby="filterDropdown">
-                    <a class="dropdown-item active" href="#" data-filter="all">All</a>
-                    <a class="dropdown-item" href="#" data-filter="unread">Unread</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#" data-filter="Message">Messages</a>
-                    <a class="dropdown-item" href="#" data-filter="Connection">Connections</a>
-                    <a class="dropdown-item" href="#" data-filter="Event">Events</a>
-                    <a class="dropdown-item" href="#" data-filter="Other">Other</a>
-                </div>
-            </div>
+        
+        <div class="notification-filters">
+            <div class="notification-filter active" data-filter="all">All</div>
+            <div class="notification-filter" data-filter="unread">Unread</div>
+            <div class="notification-filter" data-filter="mentions">Mentions</div>
+            <div class="notification-filter" data-filter="connections">Connections</div>
+            <div class="notification-filter" data-filter="groups">Groups</div>
         </div>
     </div>
-
-    <div class="notifications-list">
-        {% for notification in notifications %}
-            <div class="notification-item {% if not notification.is_read %}unread{% endif %}" 
-                 data-id="{{ notification.notification_id }}" 
-                 data-type="{{ notification.type }}">
-                <div class="notification-icon 
-                    {% if notification.type == 'Message' %}message-icon{% endif %}
-                    {% if notification.type == 'Connection' %}connection-icon{% endif %}
-                    {% if notification.type == 'Event' %}event-icon{% endif %}
-                    {% if notification.type == 'Other' %}other-icon{% endif %}">
-                    {% if notification.type == 'Message' %}
-                        <i class="fas fa-envelope"></i>
-                    {% elif notification.type == 'Connection' %}
-                        <i class="fas fa-user-plus"></i>
-                    {% elif notification.type == 'Event' %}
-                        <i class="fas fa-calendar-alt"></i>
-                    {% else %}
-                        <i class="fas fa-bell"></i>
-                    {% endif %}
-                </div>
-                <div class="notification-content">
-                    <div class="notification-text">{{ notification.content }}</div>
-                    <div class="notification-meta">
-                        <span class="notification-time">{{ notification.timestamp|timesince }} ago</span>
-                        {% if not notification.is_read %}
-                            <span class="unread-indicator"></span>
-                        {% endif %}
+    
+    {% if notifications %}
+        <div class="notifications-list">
+            {% for notification in notifications %}
+                <div class="card notification-card {% if not notification.is_read %}notification-unread{% endif %}" 
+                     data-notification-id="{{ notification.id }}"
+                     data-notification-type="{{ notification.type }}">
+                    <div class="notification-content">
+                        <div class="notification-icon">
+                            {% if notification.type == 'connection' %}
+                                <i class="fas fa-user-plus"></i>
+                            {% elif notification.type == 'mention' %}
+                                <i class="fas fa-at"></i>
+                            {% elif notification.type == 'comment' %}
+                                <i class="fas fa-comment"></i>
+                            {% elif notification.type == 'like' %}
+                                <i class="fas fa-thumbs-up"></i>
+                            {% elif notification.type == 'group' %}
+                                <i class="fas fa-users"></i>
+                            {% elif notification.type == 'event' %}
+                                <i class="fas fa-calendar"></i>
+                            {% elif notification.type == 'mentorship' %}
+                                <i class="fas fa-hands-helping"></i>
+                            {% else %}
+                                <i class="fas fa-bell"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="notification-body">
+                            <h3 class="notification-title">{{ notification.title }}</h3>
+                            <p class="notification-text">{{ notification.message }}</p>
+                            
+                            <div class="notification-meta">
+                                <span class="notification-time">{{ notification.created_at|timesince }} ago</span>
+                                
+                                <div class="notification-actions">
+                                    {% if notification.link %}
+                                        <a href="{{ notification.link }}" class="notification-action">View</a>
+                                    {% endif %}
+                                    
+                                    {% if not notification.is_read %}
+                                        <form action="{% url 'core:mark_notification_read' pk=notification.id %}" method="POST" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="notification-action" style="background: none; border: none; padding: 0; font: inherit; cursor: pointer;">Mark as read</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="notification-actions">
-                    {% if not notification.is_read %}
-                        <button class="btn btn-sm btn-link mark-read-btn" data-id="{{ notification.notification_id }}">
-                            Mark as read
-                        </button>
-                    {% endif %}
-                    {% if notification.type == 'Connection' and "connection request" in notification.content|lower %}
-                        <div class="connection-buttons">
-                            <button class="btn btn-sm btn-success accept-request-btn">Accept</button>
-                            <button class="btn btn-sm btn-danger decline-request-btn">Decline</button>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        {% empty %}
-            <div class="empty-notifications">
-                <div class="empty-icon">
-                    <i class="far fa-bell-slash"></i>
-                </div>
-                <h3>No notifications</h3>
-                <p>You don't have any notifications at the moment.</p>
-            </div>
-        {% endfor %}
-    </div>
-
-    {% if notifications.has_other_pages %}
-    <div class="pagination-container">
-        <ul class="pagination">
-            {% if notifications.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ notifications.previous_page_number }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link" aria-hidden="true">&laquo;</span>
-                </li>
-            {% endif %}
-            
-            {% for i in notifications.paginator.page_range %}
-                {% if notifications.number == i %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ i }} <span class="sr-only">(current)</span></span>
-                    </li>
-                {% else %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-                    </li>
-                {% endif %}
             {% endfor %}
-            
-            {% if notifications.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ notifications.next_page_number }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link" aria-hidden="true">&raquo;</span>
-                </li>
-            {% endif %}
-        </ul>
-    </div>
+        </div>
+    {% else %}
+        <div class="notification-empty">
+            <i class="far fa-bell"></i>
+            <p>You don't have any notifications yet</p>
+        </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block JS %}
+<script src="{% static 'core/notifications.js' %}"></script>
 {% endblock %}
 

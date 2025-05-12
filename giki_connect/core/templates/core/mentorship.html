@@ -1,0 +1,412 @@
+{% extends "core/layout.html" %}
+
+{% block CSS %}
+<style>
+    .mentorship-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .mentor-card {
+        margin-bottom: 20px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .mentor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+    
+    .mentor-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .mentor-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: var(--accent-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .mentor-name {
+        font-size: 1.3rem;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    
+    .mentor-title {
+        color: var(--light-text);
+    }
+    
+    .mentor-stats {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .mentor-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .mentor-stat-value {
+        font-weight: bold;
+        color: var(--primary-color);
+        font-size: 1.2rem;
+    }
+    
+    .mentor-stat-label {
+        font-size: 0.8rem;
+        color: var(--light-text);
+    }
+    
+    .mentor-bio {
+        margin-bottom: 15px;
+    }
+    
+    .mentor-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .mentor-skill {
+        background-color: var(--accent-color);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .mentor-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    
+    .mentorship-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 20px;
+    }
+    
+    .mentorship-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+    }
+    
+    .mentorship-tab.active {
+        border-bottom: 2px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .mentorship-content {
+        display: none;
+    }
+    
+    .mentorship-content.active {
+        display: block;
+    }
+    
+    .application-card {
+        margin-bottom: 15px;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .application-status {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .status-pending {
+        background-color: #feebc8;
+        color: #c05621;
+    }
+    
+    .status-accepted {
+        background-color: #c6f6d5;
+        color: #2f855a;
+    }
+    
+    .status-rejected {
+        background-color: #fed7d7;
+        color: #c53030;
+    }
+    
+    .application-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .mentor-header {
+            flex-direction: column;
+        }
+        
+        .mentor-stats {
+            justify-content: space-around;
+            width: 100%;
+        }
+        
+        .mentor-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .mentorship-tabs {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="mentorship-container">
+    <h1>Mentorship Program</h1>
+    
+    <div class="mentorship-tabs">
+        <div class="mentorship-tab active" data-tab="available">Available Mentors</div>
+        <div class="mentorship-tab" data-tab="my-mentors">My Mentors</div>
+        <div class="mentorship-tab" data-tab="applications">My Applications</div>
+        {% if user.is_alumni %}
+        <div class="mentorship-tab" data-tab="mentees">My Mentees</div>
+        <div class="mentorship-tab" data-tab="requests">Mentorship Requests</div>
+        {% endif %}
+    </div>
+    
+    <!-- Available Mentors Tab -->
+    <div class="mentorship-content active" id="available">
+        {% if available_mentors %}
+            {% for mentor in available_mentors %}
+                <div class="card mentor-card">
+                    <div class="mentor-header">
+                        <div class="mentor-info">
+                            {% if mentor.profile.avatar %}
+                                <img src="{{ mentor.profile.avatar.url }}" alt="{{ mentor.username }}" class="mentor-avatar">
+                            {% else %}
+                                <div class="mentor-avatar">{{ mentor.username|first }}</div>
+                            {% endif %}
+                            <div>
+                                <h3 class="mentor-name">{{ mentor.username }}</h3>
+                                <p class="mentor-title">{{ mentor.profile.title }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mentor-stats">
+                            <div class="mentor-stat">
+                                <span class="mentor-stat-value">{{ mentor.mentees.count }}</span>
+                                <span class="mentor-stat-label">Mentees</span>
+                            </div>
+                            <div class="mentor-stat">
+                                <span class="mentor-stat-value">{{ mentor.experience_years }}</span>
+                                <span class="mentor-stat-label">Years Exp</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mentor-bio">
+                        <p>{{ mentor.profile.bio }}</p>
+                    </div>
+                    
+                    <div class="mentor-skills">
+                        {% for skill in mentor.profile.skills.all %}
+                            <span class="mentor-skill">{{ skill.name }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mentor-actions">
+                        <a href="{% url 'core:get_profile' mentor.id %}" class="btn btn-outline">View Profile</a>
+                        {% if user and not user.is_alumni %}
+                            <form action="{% url 'core:apply_for_mentorship' mentor.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">Request Mentorship</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <p>No mentors are available at the moment.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- My Mentors Tab -->
+    <div class="mentorship-content" id="my-mentors">
+        {% if my_mentors %}
+            {% for mentorship in my_mentors %}
+                <div class="card mentor-card">
+                    <div class="mentor-header">
+                        <div class="mentor-info">
+                            {% if mentorship.mentor.profile.avatar %}
+                                <img src="{{ mentorship.mentor.profile.avatar.url }}" alt="{{ mentorship.mentor.username }}" class="mentor-avatar">
+                            {% else %}
+                                <div class="mentor-avatar">{{ mentorship.mentor.username|first }}</div>
+                            {% endif %}
+                            <div>
+                                <h3 class="mentor-name">{{ mentorship.mentor.username }}</h3>
+                                <p class="mentor-title">{{ mentorship.mentor.profile.title }}</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p>Since: {{ mentorship.created_at|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mentor-actions">
+                        <a href="{% url 'core:get_profile' mentorship.mentor.id %}" class="btn btn-outline">View Profile</a>
+                        <a href="{% url 'core:send_message' mentorship.mentor.id %}" class="btn btn-primary">Message</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <p>You don't have any active mentors.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- My Applications Tab -->
+    <div class="mentorship-content" id="applications">
+        {% if my_applications %}
+            {% for application in my_applications %}
+                <div class="application-card">
+                    <span class="application-status status-{{ application.status|lower }}">{{ application.status }}</span>
+                    <h3>Application to {{ application.mentor.username }}</h3>
+                    <p>Submitted: {{ application.created_at|date:"M d, Y" }}</p>
+                    
+                    {% if application.status == 'PENDING' %}
+                        <div class="application-actions">
+                            <form action="{% url 'core:withdraw_mentorship_application' application.mentor.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline">Withdraw Application</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <p>You don't have any mentorship applications.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if user.is_alumni %}
+    <!-- My Mentees Tab -->
+    <div class="mentorship-content" id="mentees">
+        {% if my_mentees %}
+            {% for mentorship in my_mentees %}
+                <div class="card mentor-card">
+                    <div class="mentor-header">
+                        <div class="mentor-info">
+                            {% if mentorship.mentee.profile.avatar %}
+                                <img src="{{ mentorship.mentee.profile.avatar.url }}" alt="{{ mentorship.mentee.username }}" class="mentor-avatar">
+                            {% else %}
+                                <div class="mentor-avatar">{{ mentorship.mentee.username|first }}</div>
+                            {% endif %}
+                            <div>
+                                <h3 class="mentor-name">{{ mentorship.mentee.username }}</h3>
+                                <p class="mentor-title">{{ mentorship.mentee.profile.title }}</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p>Since: {{ mentorship.created_at|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mentor-actions">
+                        <a href="{% url 'core:get_profile' mentorship.mentee.id %}" class="btn btn-outline">View Profile</a>
+                        <a href="{% url 'core:send_message' mentorship.mentee.id %}" class="btn btn-primary">Message</a>
+                        <form action="{% url 'core:update_mentorship_status' user.user_id mentorship.id %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="ENDED">
+                            <button type="submit" class="btn btn-outline">End Mentorship</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <p>You don't have any mentees at the moment.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Mentorship Requests Tab -->
+    <div class="mentorship-content" id="requests">
+        {% if mentorship_requests %}
+            {% for request in mentorship_requests %}
+                <div class="application-card">
+                    <h3>Request from {{ request.student.username }}</h3>
+                    <p>Submitted: {{ request.created_at|date:"M d, Y" }}</p>
+                    
+                    <div class="application-actions">
+                        <form action="{% url 'core:accept_mentorship' user.user_id request.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Accept</button>
+                        </form>
+                        <form action="{% url 'core:reject_mentorship' user.user_id request.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline">Decline</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <p>You don't have any pending mentorship requests.</p>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block JS %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching functionality
+        const tabs = document.querySelectorAll('.mentorship-tab');
+        const contents = document.querySelectorAll('.mentorship-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Remove active class from all tabs and contents
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to current tab and content
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %} 

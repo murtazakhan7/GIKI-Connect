@@ -3,22 +3,7 @@
 
 {% block CSS %}
 <link rel="stylesheet" href="{% static 'core/sign_up.css' %}">
-<style>
-    .signin-link {
-        margin-top: 20px;
-        text-align: center;
-    }
-    .signin-link a {
-        color: #2c5282;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s;
-    }
-    .signin-link a:hover {
-        color: #1a365d;
-        text-decoration: underline;
-    }
-</style>
+
 {% endblock %}
 
 {% block JS %}
@@ -112,7 +97,7 @@
         <input type="submit" value="Submit">
     </div>
 </form>
-<div class="signin-link">
+<div class ="signin-link">
     <a href="{% url 'core:signin' %}">Already Have an Account? Sign In</a>
 </div>
 {% endblock %}

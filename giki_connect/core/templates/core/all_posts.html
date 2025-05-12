@@ -1,0 +1,506 @@
+{% extends "core/layout.html" %}
+{% load static %}
+
+{% block CSS %}
+<style>
+    .posts-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .create-post {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .create-post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-right: 15px;
+    }
+    
+    .post-form textarea {
+        width: 100%;
+        height: 100px;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        resize: none;
+        margin-bottom: 15px;
+    }
+    
+    .post-form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .post-form-attachments {
+        display: flex;
+    }
+    
+    .attachment-icon {
+        margin-right: 15px;
+        color: var(--light-text);
+        cursor: pointer;
+    }
+    
+    .attachment-icon:hover {
+        color: var(--primary-color);
+    }
+    
+    .post-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    
+    .post-user {
+        display: flex;
+        align-items: center;
+    }
+    
+    .post-user-info {
+        margin-left: 15px;
+    }
+    
+    .post-user-name {
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    .post-timestamp {
+        font-size: 0.85rem;
+        color: var(--light-text);
+    }
+    
+    .post-actions {
+        position: relative;
+    }
+    
+    .post-actions-toggle {
+        cursor: pointer;
+        color: var(--light-text);
+    }
+    
+    .post-actions-menu {
+        position: absolute;
+        right: 0;
+        top: 25px;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        width: 150px;
+        display: none;
+        z-index: 10;
+    }
+    
+    .post-actions-menu.active {
+        display: block;
+    }
+    
+    .post-action-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .post-action-item:hover {
+        background-color: var(--accent-color);
+    }
+    
+    .post-content {
+        margin-bottom: 15px;
+    }
+    
+    .post-media img {
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .post-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 15px;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .post-stats {
+        display: flex;
+        color: var(--light-text);
+        font-size: 0.9rem;
+    }
+    
+    .post-stat {
+        margin-right: 15px;
+    }
+    
+    .post-reactions {
+        display: flex;
+    }
+    
+    .post-reaction {
+        margin-left: 20px;
+        color: var(--light-text);
+        cursor: pointer;
+        transition: color 0.3s;
+    }
+    
+    .post-reaction:hover, .post-reaction.active {
+        color: var(--primary-color);
+    }
+    
+    .comments-section {
+        margin-top: 15px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 15px;
+    }
+    
+    .comment {
+        display: flex;
+        margin-bottom: 15px;
+    }
+    
+    .comment-content {
+        background-color: var(--accent-color);
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-left: 15px;
+        position: relative;
+        flex: 1;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .comment-form {
+        display: flex;
+        margin-top: 15px;
+        align-items: center;
+    }
+    
+    .comment-input {
+        flex: 1;
+        padding: 10px 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        margin-left: 15px;
+    }
+    
+    .comment-submit {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        margin-left: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .show-comments {
+        color: var(--primary-color);
+        cursor: pointer;
+        margin-top: 10px;
+        display: inline-block;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(0,0,0,0.1);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .load-more {
+        text-align: center;
+        margin: 30px 0;
+    }
+</style>
+{% endblock %}
+
+{% block JS %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle post actions menu
+        document.querySelectorAll('.post-actions-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                // Close all menus first
+                document.querySelectorAll('.post-actions-menu').forEach(menu => {
+                    menu.classList.remove('active');
+                });
+                
+                // Toggle clicked menu
+                this.nextElementSibling.classList.toggle('active');
+            });
+        });
+        
+        // Close menus when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.matches('.post-actions-toggle') && !e.target.closest('.post-actions-menu')) {
+                document.querySelectorAll('.post-actions-menu').forEach(menu => {
+                    menu.classList.remove('active');
+                });
+            }
+        });
+        
+        // Like functionality
+        document.querySelectorAll('.like-button').forEach(button => {
+            button.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const postId = this.getAttribute('data-post-id');
+                const likeCount = document.querySelector(`.like-count[data-post-id="${postId}"]`);
+                
+                if (this.classList.contains('active')) {
+                    likeCount.textContent = parseInt(likeCount.textContent) + 1;
+                } else {
+                    likeCount.textContent = parseInt(likeCount.textContent) - 1;
+                }
+                
+                // AJAX call would go here to update like status on server
+            });
+        });
+        
+        // Comment form submission
+        document.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const postId = this.getAttribute('data-post-id');
+                const commentInput = this.querySelector('.comment-input');
+                const commentText = commentInput.value.trim();
+                
+                if (commentText) {
+                    // Here you would make an AJAX call to submit the comment
+                    // For now, we'll just clear the input
+                    commentInput.value = '';
+                    
+                    // Show success message or add comment to DOM
+                    alert('Comment submitted successfully!');
+                }
+            });
+        });
+        
+        // Toggle comments visibility
+        document.querySelectorAll('.show-comments').forEach(button => {
+            button.addEventListener('click', function() {
+                const postId = this.getAttribute('data-post-id');
+                const commentsSection = document.querySelector(`.comments-section[data-post-id="${postId}"]`);
+                
+                if (commentsSection.style.display === 'none') {
+                    commentsSection.style.display = 'block';
+                    this.textContent = 'Hide comments';
+                    
+                    // Here you would fetch comments via AJAX if they're not already loaded
+                } else {
+                    commentsSection.style.display = 'none';
+                    this.textContent = 'Show comments';
+                }
+            });
+        });
+        
+        // Initialize file input for post attachments
+        const fileInput = document.getElementById('post-image');
+        const fileLabel = document.querySelector('.attachment-icon[for="post-image"]');
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    fileLabel.style.color = 'var(--primary-color)';
+                } else {
+                    fileLabel.style.color = 'var(--light-text)';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="posts-container">
+    <h1>News Feed</h1>
+    
+    {% if user %}
+    <div class="create-post">
+        <div class="create-post-header">
+            <div class="user-avatar">
+                {{ user.name|first }}
+            </div>
+            <h3>Create Post</h3>
+        </div>
+        
+        <form action="{% url 'core:create-post' user.user_id %}" method="post" enctype="multipart/form-data" class="post-form">
+            {% csrf_token %}
+            <textarea name="content" placeholder="What's on your mind?" required></textarea>
+            
+            <div class="post-form-actions">
+                <div class="post-form-attachments">
+                    <label for="post-image" class="attachment-icon">
+                        <i class="fas fa-image"></i>
+                    </label>
+                    <input type="file" id="post-image" name="image" accept="image/*" style="display: none;">
+                    
+                    <label for="post-document" class="attachment-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </label>
+                    <input type="file" id="post-document" name="document" accept=".pdf,.doc,.docx" style="display: none;">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Post</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    <div class="posts-list">
+        {% for post in posts %}
+        <article class="post-card" id="post-{{ post.post_id }}">
+            <div class="post-header">
+                <div class="post-user">
+                    <div class="user-avatar">
+                        {{ post.author.name|first }}
+                    </div>
+                    <div class="post-user-info">
+                        <a href="{% url 'core:get_profile' post.author.user_id %}" class="post-user-name">{{ post.author.name }}</a>
+                        <div class="post-timestamp">{{ post.timestamp|date:"F j, Y, g:i a" }}</div>
+                    </div>
+                </div>
+                
+                <div class="post-actions">
+                    <div class="post-actions-toggle">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </div>
+                    <div class="post-actions-menu">
+                        {% if user.user_id == post.author.user_id %}
+                        <div class="post-action-item">
+                            <i class="fas fa-edit"></i> Edit Post
+                        </div>
+                        <a href="{% url 'core:delete-post' post.post_id user.user_id %}" class="post-action-item" onclick="return confirm('Are you sure you want to delete this post?');">
+                            <i class="fas fa-trash"></i> Delete Post
+                        </a>
+                        {% else %}
+                        <div class="post-action-item">
+                            <i class="fas fa-flag"></i> Report Post
+                        </div>
+                        {% endif %}
+                        <a href="{% url 'core:post-detail' post.post_id %}" class="post-action-item">
+                            <i class="fas fa-external-link-alt"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="post-content">
+                <p>{{ post.content }}</p>
+            </div>
+            
+            {% if post.image %}
+            <div class="post-media">
+                <img src="{{ post.image.url }}" alt="Post image">
+            </div>
+            {% endif %}
+            
+            <div class="post-footer">
+                <div class="post-stats">
+                    <div class="post-stat">
+                        <i class="fas fa-thumbs-up"></i> <span class="like-count" data-post-id="{{ post.post_id }}">{{ post.likes_count|default:0 }}</span> likes
+                    </div>
+                    <div class="post-stat">
+                        <i class="fas fa-comment"></i> <span class="comment-count" data-post-id="{{ post.post_id }}">{{ post.comments_count|default:0 }}</span> comments
+                    </div>
+                </div>
+                
+                <div class="post-reactions">
+                    <div class="post-reaction like-button" data-post-id="{{ post.post_id }}">
+                        <i class="fas fa-thumbs-up"></i> Like
+                    </div>
+                    <div class="post-reaction comment-button" data-post-id="{{ post.post_id }}">
+                        <i class="fas fa-comment"></i> Comment
+                    </div>
+                </div>
+            </div>
+            
+            <div class="show-comments" data-post-id="{{ post.post_id }}">Show comments</div>
+            
+            <div class="comments-section" data-post-id="{{ post.post_id }}" style="display: none;">
+                {% for comment in post.comments %}
+                <div class="comment">
+                    <div class="user-avatar">
+                        {{ comment.author.name|first }}
+                    </div>
+                    <div class="comment-content">
+                        <div class="comment-author">{{ comment.author.name }}</div>
+                        <p>{{ comment.content }}</p>
+                        <div class="post-timestamp">{{ comment.timestamp|date:"F j, Y, g:i a" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No comments yet. Be the first to comment!</p>
+                {% endfor %}
+                
+                {% if user %}
+                <form class="comment-form" data-post-id="{{ post.post_id }}" action="{% url 'core:add_comment' post.post_id user.user_id %}" method="post">
+                    {% csrf_token %}
+                    <div class="user-avatar">
+                        {{ user.name|first }}
+                    </div>
+                    <input type="text" name="content" class="comment-input" placeholder="Write a comment...">
+                    <button type="submit" class="comment-submit">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% empty %}
+        <div class="card">
+            <p>No posts yet. Be the first to share something!</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if posts %}
+    <div class="load-more">
+        <button id="load-more-button" class="btn btn-outline">Load More</button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

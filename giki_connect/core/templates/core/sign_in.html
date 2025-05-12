@@ -4,41 +4,10 @@
 
 {% block CSS %}
   <link rel="stylesheet" href="{% static 'core/sign_in.css' %}">
-  <style>
-    .signup-link {
-        margin-top: 20px;
-        text-align: center;
-    }
-    .signup-link a {
-        color: #2c5282;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s;
-    }
-    .signup-link a:hover {
-        color: #1a365d;
-        text-decoration: underline;
-    }
-  </style>
 {% endblock %}
 
 {% block JS %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if redirect is needed
-        var shouldRedirect = {% if redirect %}true{% else %}false{% endif %};
-        var redirectUrl = "{{ redirect_url|default:'' }}";
-        
-        if (shouldRedirect && redirectUrl) {
-            window.location.href = redirectUrl;
-        }
-
-        // Display message if present
-        {% if message %}
-            alert("{{ message }}");
-        {% endif %}
-    });
-</script>
+<script src="{% static 'core/sign_in.js' %}" defer></script>
 {% endblock %}
 
 {% block body %}

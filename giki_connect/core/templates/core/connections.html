@@ -1,11 +1,15 @@
-{% extends 'layout.html' %}
+{% extends 'core/layout.html' %}
 {% load static %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/connections.css' %}">
 {% endblock %}
 
-{% block content %}
+{% block CSS %}
+<link rel="stylesheet" href="{% static 'core/connections.css' %}">
+{% endblock %}
+
+{% block body %}
 <div class="connections-container">
     <div class="connections-header">
         <h1>My Network</h1>
@@ -22,7 +26,7 @@
         <button class="tab-btn" data-tab="suggestions">Suggestions</button>
     </div>
 
-    <div class="tab-content" id="connections-tab">
+    <div class="tab-content active" id="connections-tab">
         <div class="connections-list">
             {% if connections %}
                 {% for connection in connections %}
@@ -39,9 +43,9 @@
                             
                             <div class="connection-actions">
                                 <a href="{% url 'core:get_profile' connection.user_id %}" class="btn btn-outline">View Profile</a>
-                                <a href="#" class="btn btn-outline message-btn" data-userid="{{ connection.user_id }}">Message</a>
+                                <a href="{% url 'core:send_message' connection.user_id %}" class="btn btn-outline">Message</a>
                                 {% if connection.role == 'Alumnus' and user.role == 'Student' and connection.alumnus.mentoring_interest %}
-                                    <a href="#" class="btn btn-outline request-mentor-btn" data-userid="{{ connection.user_id }}">Request Mentorship</a>
+                                    <button class="btn btn-outline request-mentor-btn" data-userid="{{ connection.user_id }}">Request Mentorship</button>
                                 {% endif %}
                             </div>
                         </div>
@@ -56,7 +60,7 @@
         </div>
     </div>
 
-    <div class="tab-content hidden" id="pending-tab">
+    <div class="tab-content" id="pending-tab">
         <div class="connections-list">
             {% if pending_requests %}
                 {% for request in pending_requests %}
@@ -75,8 +79,16 @@
                             
                             <div class="request-actions">
                                 <a href="{% url 'core:get_profile' request.from_user.user_id %}" class="btn btn-outline">View Profile</a>
-                                <button class="btn btn-primary accept-btn" data-requestid="{{ request.request_id }}">Accept</button>
-                                <button class="btn btn-danger decline-btn" data-requestid="{{ request.request_id }}">Decline</button>
+                                <form action="{% url 'core:manage_connection_request' request.request_id %}" method="POST" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="accept">
+                                    <button type="submit" class="btn btn-primary">Accept</button>
+                                </form>
+                                <form action="{% url 'core:manage_connection_request' request.request_id %}" method="POST" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn btn-danger">Decline</button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -89,7 +101,7 @@
         </div>
     </div>
 
-    <div class="tab-content hidden" id="sent-tab">
+    <div class="tab-content" id="sent-tab">
         <div class="connections-list">
             {% if sent_requests %}
                 {% for request in sent_requests %}
@@ -108,7 +120,11 @@
                             
                             <div class="request-actions">
                                 <a href="{% url 'core:get_profile' request.to_user.user_id %}" class="btn btn-outline">View Profile</a>
-                                <button class="btn btn-danger cancel-btn" data-requestid="{{ request.request_id }}">Cancel Request</button>
+                                <form action="{% url 'core:manage_connection_request' request.request_id %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="cancel">
+                                    <button type="submit" class="btn btn-danger">Cancel Request</button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -121,7 +137,7 @@
         </div>
     </div>
 
-    <div class="tab-content hidden" id="suggestions-tab">
+    <div class="tab-content" id="suggestions-tab">
         <div class="connections-list">
             {% if suggestions %}
                 {% for suggestion in suggestions %}
@@ -161,7 +177,8 @@
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Send Connection Request</h2>
-        <form id="connection-request-form">
+        <form id="connection-request-form" action="{% url 'core:send_connection_request' user.user_id 0 %}" method="POST">
+            {% csrf_token %}
             <input type="hidden" id="to-user-id" name="to_user_id">
             <div class="form-group">
                 <label for="message">Add a personal note (optional):</label>
@@ -180,15 +197,16 @@
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Request Mentorship</h2>
-        <form id="mentorship-request-form">
+        <form id="mentorship-request-form" action="{% url 'core:apply_for_mentorship' 0 %}" method="POST">
+            {% csrf_token %}
             <input type="hidden" id="mentor-id" name="mentor_id">
             <div class="form-group">
                 <label for="mentorship-goals">What are your goals for this mentorship?</label>
-                <textarea id="mentorship-goals" name="goals" rows="4" placeholder="I'm looking for guidance in..."></textarea>
+                <textarea id="mentorship-goals" name="goals" rows="4" placeholder="I'm looking for guidance in..." required></textarea>
             </div>
             <div class="form-group">
                 <label for="mentorship-message">Message to potential mentor:</label>
-                <textarea id="mentorship-message" name="message" rows="4" placeholder="I'd appreciate your mentorship because..."></textarea>
+                <textarea id="mentorship-message" name="message" rows="4" placeholder="I'd appreciate your mentorship because..." required></textarea>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary cancel-modal">Cancel</button>
@@ -197,4 +215,8 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block JS %}
+<script src="{% static 'core/connections.js' %}"></script>
 {% endblock %}
