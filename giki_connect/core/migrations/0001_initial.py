@@ -94,20 +94,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Message',
-            fields=[
-                ('message_id', models.AutoField(primary_key=True, serialize=False)),
-                ('content', models.TextField()),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('is_public', models.BooleanField(default=True)),
-                ('group', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='core.group')),
-                ('receiver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='received_messages', to='core.user')),
-                ('sender', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sent_messages', to='core.user')),
-            ],
-        ),
-        migrations.CreateModel(
             name='Notification',
             fields=[
                 ('notification_id', models.AutoField(primary_key=True, serialize=False)),
@@ -116,27 +102,6 @@ class Migration(migrations.Migration):
                 ('is_read', models.BooleanField(default=False)),
                 ('timestamp', models.DateTimeField(auto_now_add=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.user')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Post',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content_text', models.TextField()),
-                ('media_url', models.URLField(blank=True, null=True)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.user')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Comment',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('comment_id', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('text', models.TextField()),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.user')),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='core.post')),
             ],
         ),
         migrations.CreateModel(
