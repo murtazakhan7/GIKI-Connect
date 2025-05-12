@@ -158,6 +158,7 @@ class GroupMember(models.Model):
     joined_at = models.DateTimeField(null=True, blank=True)
 
 class Message(models.Model):
+    message_id = models.AutoField(primary_key=True)
     user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user1_messages')
     user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user2_messages')
     chat_history = models.JSONField(default=list)
