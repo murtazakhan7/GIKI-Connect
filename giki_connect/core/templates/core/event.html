@@ -25,7 +25,7 @@
 
     <div id="create-event" class="tab-content active">
         <h2>Create New Event</h2>
-        <form action="{% url 'core:create_event' %}" method="post" class="event-form">
+        <form action="{% url 'core:create_event' user.user_id %}" method="post" class="event-form">
             {% csrf_token %}
             
             <div class="form-group">

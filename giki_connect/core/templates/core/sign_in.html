@@ -32,6 +32,11 @@
         if (shouldRedirect && redirectUrl) {
             window.location.href = redirectUrl;
         }
+
+        // Display message if present
+        {% if message %}
+            alert("{{ message }}");
+        {% endif %}
     });
 </script>
 {% endblock %}

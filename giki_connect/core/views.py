@@ -46,23 +46,62 @@ class NotificationAPI(APIView):
         return Response({'status': 'marked as read'})
 
 class SignInView(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/sign_in.html'
+    
+    def get(self, request):
+        # Render the empty form on GET requests
+        return Response({}, template_name=self.template_name)
+    
     def post(self, request):
-        mail = request.data.get('mail')
+        email = request.data.get('email')
         password = request.data.get('password')
 
-        if not mail or not password:
-            return Response({"error": "Mail and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not email or not password:
+            error = {"error": "Email and password are required."}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        user = get_object_or_404(User, mail=mail)
+        try:
+            user = User.objects.get(email=email)
 
-        if check_password(password, user.password_hash):
-            # Invalidate any previous session
-            request.session.flush()
-            # Set session for this user
-            request.session['user_id'] = user.user_id
-            return Response({"message": "Login successful", "user_id": user.user_id})
-        else:
-            return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+            if check_password(password, user.password_hash):
+                # Invalidate any previous session
+                request.session.flush()
+                # Set session for this user
+                request.session['user_id'] = user.user_id
+                
+                # Check if user has profile
+                has_profile = Profile.objects.filter(user=user).exists()
+                
+                if request.accepted_renderer.format == 'html':
+                    if has_profile:
+                        # Redirect to home page
+                        return Response({
+                            'user': UserSerializer(user).data,
+                            'redirect': True,
+                            'redirect_url': f'/api/profile/{user.user_id}/'
+                        }, template_name=self.template_name)
+                    else:
+                        # Redirect to create profile
+                        return Response({
+                            'user': UserSerializer(user).data,
+                            'redirect': True,
+                            'redirect_url': f'/api/profile/create/{user.user_id}/'
+                        }, template_name=self.template_name)
+                return Response({"message": "Login successful", "user_id": user.user_id})
+            else:
+                error = {"error": "Invalid credentials."}
+                if request.accepted_renderer.format == 'html':
+                    return Response({'errors': error}, template_name=self.template_name)
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+                
+        except User.DoesNotExist:
+            error = {"error": "User with this email does not exist."}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_404_NOT_FOUND)
 
 
 class CommentAPI(APIView):
@@ -494,7 +533,7 @@ class GroupMessageView(APIView):
 # 6. List All Groups
 class ListGroupsView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/connections.html'
+    template_name = 'core/group.html'
     
     def get(self, request):
         groups = Group.objects.all()
