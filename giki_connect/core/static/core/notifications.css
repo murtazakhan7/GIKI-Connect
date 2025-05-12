@@ -1,0 +1,179 @@
+/* notifications.css */
+.notifications-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.notifications-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+.notification-item.unread {
+    background-color: #f0f7ff;
+}
+
+.notification-item:hover {
+    background-color: #f9f9f9;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.message-icon {
+    background-color: #4e73df;
+    color: white;
+}
+
+.connection-icon {
+    background-color: #1cc88a;
+    color: white;
+}
+
+.event-icon {
+    background-color: #f6c23e;
+    color: white;
+}
+
+.other-icon {
+    background-color: #858796;
+    color: white;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0; /* Allows text truncation to work */
+}
+
+.notification-text {
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.notification-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification-time {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.unread-indicator {
+    width: 8px;
+    height: 8px;
+    background-color: #4e73df;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.notification-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    margin-left: 10px;
+}
+
+.mark-read-btn {
+    color: #4e73df;
+    padding: 0;
+}
+
+.connection-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.empty-notifications {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: #888;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: #ccc;
+    margin-bottom: 20px;
+}
+
+.empty-notifications h3 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.empty-notifications p {
+    margin: 0;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* Filter active state */
+.dropdown-item.active {
+    background-color: #4e73df;
+    color: white;
+}
+
+/* Animation for notifications */
+@keyframes highlight {
+    0% {
+        background-color: #fff8e1;
+    }
+    100% {
+        background-color: inherit;
+    }
+}
+
+.notification-item.highlight {
+    animation: highlight 2s ease;
+}
