@@ -5,7 +5,7 @@ from .views import ( NotificationAPI, StudentMentorshipAPI, AlumniMentorshipAPI,
                     ManageConnectionRequestAPI, ViewReceivedRequestsAPI, ViewConnectionsAPI, GroupMessageView, ListGroupsView, 
                     CreateGroupView, JoinGroupView, MakeModeratorView, KickMemberView, ApprovedGroupsView, ApproveRequestView,  
                     CreatePostView, AllPostsView, UserPostsView, PostDetailView, DeletePostView, CommentAPI, PostCommentsAPI, 
-                    SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView, SignOutView )
+                    SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView )
 
 app_name = 'core'
 
