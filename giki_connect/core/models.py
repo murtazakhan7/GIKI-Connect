@@ -98,7 +98,6 @@ class Post(models.Model):
     post_id = models.AutoField(primary_key=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content_text = models.TextField()
-    media = models.ImageField(upload_to='post_media/', blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

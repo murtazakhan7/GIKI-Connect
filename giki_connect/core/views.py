@@ -114,18 +114,26 @@ class SignInView(APIView):
 
 
 class CommentAPI(APIView):
-
     def post(self, request, post_id, user_id):
-        post = get_object_or_404(Post, pk=post_id)
-        author = get_object_or_404(User, pk=user_id)
-        data = request.data.copy()
-        data['post'] = post.post_id
-        data['author'] = author.user_id
-        serializer = CommentSerializer(data=data)
+        serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                user = User.objects.get(pk=user_id)
+                post = Post.objects.get(pk=post_id)
+                author = post.author
+                serializer.save(author=user, post=post)
+                Notification(
+                    user= author,
+                    type='Other',
+                    content=f"{user.name} Just wrote a new Comment!"
+                )
+                return Response(serializer.data, status=201)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found'}, status=404)
+            except Post.DoesNotExist:
+                return Response({'error': 'Post not found'}, status=404)
+        return Response(serializer.errors, status=400)
+
 
     def put(self, request, comment_id, user_id):
         comment = get_object_or_404(Comment, pk=comment_id)
@@ -152,8 +160,6 @@ class PostCommentsAPI(APIView):
         return Response(serializer.data)
     
 class CreatePostView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
-
     def post(self, request, user_id):
         author = get_object_or_404(User, pk=user_id)
         data = request.data.copy()
@@ -1165,18 +1171,6 @@ class JobPostAPI(APIView):
             return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_403_FORBIDDEN)
         return Response(error, status=status.HTTP_403_FORBIDDEN)
 
-
-# Additional views for requirements
-class AllJobPostsAPI(APIView):
-    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/post.html'
-
-    def get(self, request):
-        jobposts = JobPost.objects.all()
-        serializer = JobPostSerializer(jobposts, many=True)
-        if request.accepted_renderer.format == 'html':
-            return Response({'jobposts': serializer.data, 'title': 'All Job Postings'}, template_name=self.template_name)
-        return Response(serializer.data)
 
 class IncomingConnectionRequestsAPI(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
