@@ -63,17 +63,17 @@ class SignInView(APIView):
         return Response({}, template_name=self.template_name)
     
     def post(self, request):
-        email = request.data.get('email')
+        mail = request.data.get('mail')
         password = request.data.get('password')
-
-        if not email or not password:
-            error = {"error": "Email and password are required."}
+        print(request)
+        if not mail or not password:
+            error = {"error": "mail and password are required."}
             if request.accepted_renderer.format == 'html':
                 return Response({'errors': error}, template_name=self.template_name)
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(mail=mail)
 
             if check_password(password, user.password_hash):
                 # Invalidate any previous session
@@ -107,13 +107,111 @@ class SignInView(APIView):
                 return Response(error, status=status.HTTP_401_UNAUTHORIZED)
                 
         except User.DoesNotExist:
-            error = {"error": "User with this email does not exist."}
+            error = {"error": "User with this mail does not exist."}
             if request.accepted_renderer.format == 'html':
                 return Response({'errors': error}, template_name=self.template_name)
             return Response(error, status=status.HTTP_404_NOT_FOUND)
 
 
+# class CommentAPI(APIView):
+#     def post(self, request, post_id, user_id):
+#         serializer = CommentSerializer(data=request.data)
+#         if serializer.is_valid():
+#             try:
+#                 user = User.objects.get(pk=user_id)
+#                 post = Post.objects.get(pk=post_id)
+#                 author = post.author
+#                 serializer.save(author=user, post=post)
+#                 Notification(
+#                     user= author,
+#                     type='Other',
+#                     content=f"{user.name} Just wrote a new Comment!"
+#                 )
+#                 return Response(serializer.data, status=201)
+#             except User.DoesNotExist:
+#                 return Response({'error': 'User not found'}, status=404)
+#             except Post.DoesNotExist:
+#                 return Response({'error': 'Post not found'}, status=404)
+#         return Response(serializer.errors, status=400)
+
+
+#     def put(self, request, comment_id, user_id):
+#         comment = get_object_or_404(Comment, pk=comment_id)
+#         if comment.author.user_id != user_id:
+#             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+#         serializer = CommentSerializer(comment, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()  # updates timestamp automatically
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, comment_id, user_id):
+#         comment = get_object_or_404(Comment, pk=comment_id)
+#         if comment.author.user_id != user_id:
+#             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+#         comment.delete()
+#         return Response({'status': 'Comment deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+# class PostCommentsAPI(APIView):
+#     def get(self, request, post_id):
+#         post = get_object_or_404(Post, pk=post_id)
+#         comments = Comment.objects.filter(post=post).order_by('-timestamp')
+#         serializer = CommentSerializer(comments, many=True)
+#         return Response(serializer.data)
+    
+# class CreatePostView(APIView):
+#     def post(self, request, user_id):
+#         author = get_object_or_404(User, pk=user_id)
+#         data = request.data.copy()
+#         data['author'] = user_id
+#         serializer = PostSerializer(data=data)
+#         if serializer.is_valid():
+#             post = serializer.save()
+
+#             # Notify other users
+#             users = User.objects.exclude(user_id=user_id)
+#             notifications = [
+#                 Notification(
+#                     user=u,
+#                     type='Post',
+#                     content=f"{author.name} made a new post!"
+#                 ) for u in users
+#             ]
+#             Notification.objects.bulk_create(notifications)
+
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class AllPostsView(APIView):
+#     def get(self, request):
+#         posts = Post.objects.all().order_by('-timestamp')
+#         serializer = PostSerializer(posts, many=True)
+#         return Response(serializer.data)
+
+# class UserPostsView(APIView):
+#     def get(self, request, user_id):
+#         posts = Post.objects.filter(author__user_id=user_id).order_by('-timestamp')
+#         serializer = PostSerializer(posts, many=True)
+#         return Response(serializer.data)
+
+# class PostDetailView(APIView):
+#     def get(self, request, post_id):
+#         post = get_object_or_404(Post, pk=post_id)
+#         serializer = PostSerializer(post)
+#         return Response(serializer.data)
+
+# class DeletePostView(APIView):
+#     def delete(self, request, post_id, user_id):
+#         post = get_object_or_404(Post, pk=post_id)
+#         if post.author.user_id != user_id:
+#             return Response({"error": "You can only delete your own post."}, status=status.HTTP_403_FORBIDDEN)
+#         post.delete()
+#         return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
 class CommentAPI(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/comment.html'
+    
     def post(self, request, post_id, user_id):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
@@ -121,45 +219,103 @@ class CommentAPI(APIView):
                 user = User.objects.get(pk=user_id)
                 post = Post.objects.get(pk=post_id)
                 author = post.author
-                serializer.save(author=user, post=post)
-                Notification(
-                    user= author,
+                comment = serializer.save(author=user, post=post)
+                
+                # Create and save notification (was missing .save())
+                notification = Notification(
+                    user=author,
                     type='Other',
                     content=f"{user.name} Just wrote a new Comment!"
                 )
+                notification.save()
+                
+                if request.accepted_renderer.format == 'html':
+                    return Response({
+                        'success': True,
+                        'comment': serializer.data,
+                        'post': PostSerializer(post).data
+                    }, template_name=self.template_name)
                 return Response(serializer.data, status=201)
             except User.DoesNotExist:
-                return Response({'error': 'User not found'}, status=404)
+                error = {'error': 'User not found'}
+                if request.accepted_renderer.format == 'html':
+                    return Response({'errors': error}, template_name=self.template_name)
+                return Response(error, status=404)
             except Post.DoesNotExist:
-                return Response({'error': 'Post not found'}, status=404)
+                error = {'error': 'Post not found'}
+                if request.accepted_renderer.format == 'html':
+                    return Response({'errors': error}, template_name=self.template_name)
+                return Response(error, status=404)
+        
+        if request.accepted_renderer.format == 'html':
+            return Response({'errors': serializer.errors}, template_name=self.template_name)
         return Response(serializer.errors, status=400)
-
 
     def put(self, request, comment_id, user_id):
         comment = get_object_or_404(Comment, pk=comment_id)
         if comment.author.user_id != user_id:
-            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            error = {'error': 'Permission denied'}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_403_FORBIDDEN)
+        
         serializer = CommentSerializer(comment, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()  # updates timestamp automatically
+            if request.accepted_renderer.format == 'html':
+                return Response({
+                    'success': True,
+                    'comment': serializer.data
+                }, template_name=self.template_name)
             return Response(serializer.data)
+        
+        if request.accepted_renderer.format == 'html':
+            return Response({'errors': serializer.errors}, template_name=self.template_name)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, comment_id, user_id):
         comment = get_object_or_404(Comment, pk=comment_id)
         if comment.author.user_id != user_id:
-            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            error = {'error': 'Permission denied'}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_403_FORBIDDEN)
+        
         comment.delete()
+        if request.accepted_renderer.format == 'html':
+            return Response({
+                'success': True,
+                'message': 'Comment deleted'
+            }, template_name=self.template_name)
         return Response({'status': 'Comment deleted'}, status=status.HTTP_204_NO_CONTENT)
 
+
 class PostCommentsAPI(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/post_comments.html'
+    
     def get(self, request, post_id):
         post = get_object_or_404(Post, pk=post_id)
         comments = Comment.objects.filter(post=post).order_by('-timestamp')
         serializer = CommentSerializer(comments, many=True)
+        
+        if request.accepted_renderer.format == 'html':
+            return Response({
+                'post': PostSerializer(post).data,
+                'comments': serializer.data
+            }, template_name=self.template_name)
         return Response(serializer.data)
-    
+
+
 class CreatePostView(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/create_post.html'
+    
+    def get(self, request, user_id):
+        # For displaying the form
+        user = get_object_or_404(User, pk=user_id)
+        return Response({'user': UserSerializer(user).data}, template_name=self.template_name)
+    
     def post(self, request, user_id):
         author = get_object_or_404(User, pk=user_id)
         data = request.data.copy()
@@ -179,35 +335,113 @@ class CreatePostView(APIView):
             ]
             Notification.objects.bulk_create(notifications)
 
+            if request.accepted_renderer.format == 'html':
+                return Response({
+                    'success': True,
+                    'post': serializer.data,
+                    'redirect': True,
+                    'redirect_url': f'/api/posts/{post.post_id}/details/'
+                }, template_name=self.template_name)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        if request.accepted_renderer.format == 'html':
+            return Response({
+                'errors': serializer.errors,
+                'user': UserSerializer(author).data
+            }, template_name=self.template_name)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class AllPostsView(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/all_posts.html'
+    
     def get(self, request):
         posts = Post.objects.all().order_by('-timestamp')
         serializer = PostSerializer(posts, many=True)
+        
+        if request.accepted_renderer.format == 'html':
+            # Add comment counts for each post
+            posts_with_comments = []
+            for post_data in serializer.data:
+                comment_count = Comment.objects.filter(post_id=post_data['post_id']).count()
+                post_data['comment_count'] = comment_count
+                posts_with_comments.append(post_data)
+            
+            return Response({
+                'posts': posts_with_comments
+            }, template_name=self.template_name)
         return Response(serializer.data)
+
 
 class UserPostsView(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/user_posts.html'
+    
     def get(self, request, user_id):
+        user = get_object_or_404(User, pk=user_id)
         posts = Post.objects.filter(author__user_id=user_id).order_by('-timestamp')
         serializer = PostSerializer(posts, many=True)
+        
+        if request.accepted_renderer.format == 'html':
+            return Response({
+                'user': UserSerializer(user).data,
+                'posts': serializer.data
+            }, template_name=self.template_name)
         return Response(serializer.data)
+
 
 class PostDetailView(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/post_detail.html'
+    
     def get(self, request, post_id):
         post = get_object_or_404(Post, pk=post_id)
-        serializer = PostSerializer(post)
-        return Response(serializer.data)
+        comments = Comment.objects.filter(post=post).order_by('-timestamp')
+        
+        if request.accepted_renderer.format == 'html':
+            return Response({
+                'post': PostSerializer(post).data,
+                'comments': CommentSerializer(comments, many=True).data,
+                'comment_count': comments.count()
+            }, template_name=self.template_name)
+        return Response(PostSerializer(post).data)
+
 
 class DeletePostView(APIView):
+    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+    template_name = 'core/delete_post.html'
+    
+    def get(self, request, post_id, user_id):
+        # Show confirmation page
+        post = get_object_or_404(Post, pk=post_id)
+        if post.author.user_id != user_id:
+            error = {"error": "You can only delete your own post."}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_403_FORBIDDEN)
+        
+        return Response({
+            'post': PostSerializer(post).data
+        }, template_name=self.template_name)
+    
     def delete(self, request, post_id, user_id):
         post = get_object_or_404(Post, pk=post_id)
         if post.author.user_id != user_id:
-            return Response({"error": "You can only delete your own post."}, status=status.HTTP_403_FORBIDDEN)
+            error = {"error": "You can only delete your own post."}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_403_FORBIDDEN)
+        
         post.delete()
+        if request.accepted_renderer.format == 'html':
+            return Response({
+                'success': True,
+                'message': 'Post deleted successfully.',
+                'redirect': True,
+                'redirect_url': '/api/posts/'
+            }, template_name=self.template_name)
         return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-
 
 class EventListView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
@@ -1184,210 +1418,443 @@ class IncomingConnectionRequestsAPI(APIView):
         return Response(serializer.data)
 
 
+# class SignUpView(APIView):
+#     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+#     template_name = 'core/signup.html'
+    
+#     def get(self, request):
+#         # Check if this is a login request
+#         if request.path.endswith('/signin/'):
+#             return Response({}, template_name='core/sign_in.html')
+#         # Otherwise it's a signup request
+#         return Response({}, template_name=self.template_name)
+        
+#     def post(self, request):
+#         # Handle signin
+#         if request.path.endswith('/signin/'):
+#             mail = request.data.get('mail')
+#             password = request.data.get('password')
+            
+#             try:
+#                 user = User.objects.get(mail=mail)
+                
+#                 # Check if password matches
+#                 if not check_password(password, user.password_hash):
+#                     error = {"error": "Invalid password."}
+#                     if request.accepted_renderer.format == 'html':
+#                         return Response({'errors': error}, template_name='core/sign_in.html')
+#                     return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+                
+#                 # Check if user has profile
+#                 has_profile = Profile.objects.filter(user=user).exists()
+                
+#                 if has_profile:
+#                     # Redirect to home page
+#                     user_data = UserSerializer(user).data
+#                     if request.accepted_renderer.format == 'html':
+#                         return Response({'user': user_data, 'redirect': True, 'redirect_url': f'/api/profile/{user.user_id}/'}, 
+#                                         template_name='core/sign_in.html')
+#                     return Response(user_data)
+#                 else:
+#                     # Redirect to create profile
+#                     if request.accepted_renderer.format == 'html':
+#                         return Response({'user': UserSerializer(user).data, 'redirect': True, 
+#                                         'redirect_url': f'/api/profile/create/{user.user_id}/'}, 
+#                                         template_name='core/sign_in.html')
+#                     return Response(UserSerializer(user).data)
+                
+#             except User.DoesNotExist:
+#                 error = {"error": "User with this mail does not exist."}
+#                 if request.accepted_renderer.format == 'html':
+#                     return Response({'errors': error}, template_name='core/sign_in.html')
+#                 return Response(error, status=status.HTTP_404_NOT_FOUND)
+        
+#         # Handle signup
+#         data = request.data.copy()  # Make a mutable copy
+#         role = data.get('role')
+        
+#         if role not in ['Student', 'Alumnus']:
+#             errors = {"error": "Invalid role specified."}
+#             if request.accepted_renderer.format == 'html':
+#                 return Response({'errors': errors}, template_name=self.template_name)
+#             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+#         data['password_hash'] = make_password(data.get('password_hash', ''))
+#         user_serializer = UserSerializer(data=data)
+
+#         if user_serializer.is_valid():
+#             user = user_serializer.save()
+            
+#             if role == 'Student':
+#                 student_data = data.get('student', {})
+#                 student_data['user'] = user.user_id
+#                 student_serializer = StudentSerializer(data=student_data)
+                
+#                 if student_serializer.is_valid():
+#                     student_serializer.save()
+#                 else:
+#                     user.delete()
+#                     errors = student_serializer.errors
+#                     if request.accepted_renderer.format == 'html':
+#                         return Response({'errors': errors}, template_name=self.template_name)
+#                     return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+#             elif role == 'Alumnus':
+#                 alumnus_data = data.get('alumnus', {})
+#                 alumnus_data['user'] = user.user_id
+#                 alumnus_serializer = AlumnusSerializer(data=alumnus_data)
+                
+#                 if alumnus_serializer.is_valid():
+#                     alumnus_serializer.save()
+#                 else:
+#                     user.delete()
+#                     errors = alumnus_serializer.errors
+#                     if request.accepted_renderer.format == 'html':
+#                         return Response({'errors': errors}, template_name=self.template_name)
+#                     return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+#             # Redirect to profile creation page
+#             if request.accepted_renderer.format == 'html':
+#                 return Response({
+#                     'user': user_serializer.data, 
+#                     'redirect': True,
+#                     'redirect_url': f'/api/profile/create/{user.user_id}/'
+#                 }, template_name=self.template_name)
+#             return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+
+#         if request.accepted_renderer.format == 'html':
+#             return Response({'errors': user_serializer.errors}, template_name=self.template_name)
+#         return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class SignUpView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/signup.html'
+    template_name = 'core/sign_up.html'
     
     def get(self, request):
-        # Check if this is a login request
-        if request.path.endswith('/signin/'):
-            return Response({}, template_name='core/sign_in.html')
-        # Otherwise it's a signup request
         return Response({}, template_name=self.template_name)
-        
+    
     def post(self, request):
-        # Handle signin
-        if request.path.endswith('/signin/'):
-            email = request.data.get('email')
-            password = request.data.get('password')
-            
-            try:
-                user = User.objects.get(email=email)
-                
-                # Check if password matches
-                if not check_password(password, user.password_hash):
-                    error = {"error": "Invalid password."}
-                    if request.accepted_renderer.format == 'html':
-                        return Response({'errors': error}, template_name='core/sign_in.html')
-                    return Response(error, status=status.HTTP_401_UNAUTHORIZED)
-                
-                # Check if user has profile
-                has_profile = Profile.objects.filter(user=user).exists()
-                
-                if has_profile:
-                    # Redirect to home page
-                    user_data = UserSerializer(user).data
-                    if request.accepted_renderer.format == 'html':
-                        return Response({'user': user_data, 'redirect': True, 'redirect_url': f'/api/profile/{user.user_id}/'}, 
-                                        template_name='core/sign_in.html')
-                    return Response(user_data)
-                else:
-                    # Redirect to create profile
-                    if request.accepted_renderer.format == 'html':
-                        return Response({'user': UserSerializer(user).data, 'redirect': True, 
-                                        'redirect_url': f'/api/profile/create/{user.user_id}/'}, 
-                                        template_name='core/sign_in.html')
-                    return Response(UserSerializer(user).data)
-                
-            except User.DoesNotExist:
-                error = {"error": "User with this email does not exist."}
-                if request.accepted_renderer.format == 'html':
-                    return Response({'errors': error}, template_name='core/sign_in.html')
-                return Response(error, status=status.HTTP_404_NOT_FOUND)
-        
-        # Handle signup
-        data = request.data.copy()  # Make a mutable copy
-        role = data.get('role')
-        
-        if role not in ['Student', 'Alumnus']:
-            errors = {"error": "Invalid role specified."}
+        mail = request.data.get('mail')
+        password = request.data.get('password')
+        name = request.data.get('name')
+        role = request.data.get('role')
+        print("PRINTING REQUEST BITCHES: ",request.data)
+        # Validation
+        if not all([mail, password, name, role]):
+            error = {"error": "All fields are required."}
             if request.accepted_renderer.format == 'html':
-                return Response({'errors': errors}, template_name=self.template_name)
-            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        data['password_hash'] = make_password(data.get('password_hash', ''))
-        user_serializer = UserSerializer(data=data)
+        if role not in ['Student', 'Alumnus']:
+            error = {"error": "Invalid role. Must be 'Student' or 'Alumnus'."}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        if user_serializer.is_valid():
-            user = user_serializer.save()
-            
+        # Check if user already exists
+        if User.objects.filter(mail=mail).exists():
+            error = {"error": "User with this mail already exists."}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Create user
+            print(f"Creating user with mail: {mail}")
+            user = User.objects.create(
+                name=name,
+                mail=mail,
+                password_hash=make_password(password),  # Hash the password
+                role=role
+            )
+            print(f"User created successfully: {user.name} (ID: {user.user_id})")
+
+            # Create role-specific record
             if role == 'Student':
-                student_data = data.get('student', {})
-                student_data['user'] = user.user_id
-                student_serializer = StudentSerializer(data=student_data)
-                
-                if student_serializer.is_valid():
-                    student_serializer.save()
-                else:
-                    user.delete()
-                    errors = student_serializer.errors
-                    if request.accepted_renderer.format == 'html':
-                        return Response({'errors': errors}, template_name=self.template_name)
-                    return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+                # You might want to get these from the form
+                major = request.data.get('major', '')
+                graduation_year = request.data.get('graduation_year', 2024)
+                Student.objects.create(user=user, major=major, graduation_year=graduation_year)
+            else:  # Alumnus
+                employer = request.data.get('employer', '')
+                job_title = request.data.get('job_title', '')
+                Alumnus.objects.create(user=user, employer=employer, job_title=job_title)
 
-            elif role == 'Alumnus':
-                alumnus_data = data.get('alumnus', {})
-                alumnus_data['user'] = user.user_id
-                alumnus_serializer = AlumnusSerializer(data=alumnus_data)
-                
-                if alumnus_serializer.is_valid():
-                    alumnus_serializer.save()
-                else:
-                    user.delete()
-                    errors = alumnus_serializer.errors
-                    if request.accepted_renderer.format == 'html':
-                        return Response({'errors': errors}, template_name=self.template_name)
-                    return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-
-            # Redirect to profile creation page
+            # Auto sign-in the user
+            request.session['user_id'] = user.user_id
+            
+            # Redirect to create profile
+            redirect_url = f'/api/profile/create/{user.user_id}/'
+            
             if request.accepted_renderer.format == 'html':
                 return Response({
-                    'user': user_serializer.data, 
+                    'user': UserSerializer(user).data,
+                    'success': True,
                     'redirect': True,
-                    'redirect_url': f'/api/profile/create/{user.user_id}/'
+                    'redirect_url': redirect_url
                 }, template_name=self.template_name)
-            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "User created successfully", 
+                "user_id": user.user_id,
+                "redirect_url": redirect_url
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print(f"Error creating user: {str(e)}")
+            error = {"error": f"Error creating user: {str(e)}"}
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': error}, template_name=self.template_name)
+            return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        if request.accepted_renderer.format == 'html':
-            return Response({'errors': user_serializer.errors}, template_name=self.template_name)
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class CreateProfileView(APIView):
+#     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+#     template_name = 'core/profile.html'
+    
+#     def get(self, request, user_id=None):
+#         context = {}
+#         if user_id:
+#             try:
+#                 user = User.objects.get(user_id=user_id)
+#                 context['user'] = UserSerializer(user).data
+#             except User.DoesNotExist:
+#                 context['errors'] = {"error": "User not found."}
+#         return Response(context, template_name=self.template_name)
+    
+#     def post(self, request, user_id):
+#         try:
+#             user = User.objects.get(user_id=user_id)
+#             data = request.data.copy()
+#             data['user'] = user_id
+#             serializer = ProfileSerializer(data=data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 if request.accepted_renderer.format == 'html':
+#                     return Response({'profile': serializer.data}, template_name=self.template_name, status=status.HTTP_201_CREATED)
+#                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+                
+#             if request.accepted_renderer.format == 'html':
+#                 return Response({'errors': serializer.errors}, template_name=self.template_name, status=status.HTTP_400_BAD_REQUEST)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+#         except User.DoesNotExist:
+#             error = {"error": "User not found."}
+#             if request.accepted_renderer.format == 'html':
+#                 return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
+#             return Response(error, status=status.HTTP_404_NOT_FOUND)
+
+
+# class UpdateProfileView(APIView):
+#     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+#     template_name = 'core/profile.html'
+    
+#     def get(self, request, profile_id=None):
+#         context = {}
+#         if profile_id:
+#             try:
+#                 profile = Profile.objects.get(profile_id=profile_id)
+#                 serializer = ProfileSerializer(profile)
+#                 context['profile'] = serializer.data
+#             except Profile.DoesNotExist:
+#                 context['errors'] = {"error": "Profile not found."}
+#         return Response(context, template_name=self.template_name)
+    
+#     def put(self, request, profile_id):
+#         try:
+#             profile = Profile.objects.get(profile_id=profile_id)
+#             serializer = ProfileSerializer(profile, data=request.data, partial=True)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 if request.accepted_renderer.format == 'html':
+#                     return Response({'profile': serializer.data}, template_name=self.template_name)
+#                 return Response(serializer.data)
+                
+#             if request.accepted_renderer.format == 'html':
+#                 return Response({'errors': serializer.errors}, template_name=self.template_name, status=status.HTTP_400_BAD_REQUEST)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+#         except Profile.DoesNotExist:
+#             error = {"error": "Profile not found."}
+#             if request.accepted_renderer.format == 'html':
+#                 return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
+#             return Response(error, status=status.HTTP_404_NOT_FOUND)
+
+
+# class GetProfileView(APIView):
+#     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
+#     template_name = 'core/profile.html'
+    
+#     def get(self, request, user_id=None):
+#         if user_id:
+#             try:
+#                 user = User.objects.get(user_id=user_id)
+#                 profile = Profile.objects.get(user=user)
+#                 serializer = ProfileSerializer(profile)
+#                 if request.accepted_renderer.format == 'html':
+#                     return Response({'profile': serializer.data, 'user': UserSerializer(user).data}, template_name=self.template_name)
+#                 return Response(serializer.data)
+#             except User.DoesNotExist:
+#                 error = {"error": "User not found."}
+#                 if request.accepted_renderer.format == 'html':
+#                     return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
+#                 return Response(error, status=status.HTTP_404_NOT_FOUND)
+#             except Profile.DoesNotExist:
+#                 error = {"error": "Profile not found for this user."}
+#                 if request.accepted_renderer.format == 'html':
+#                     return Response({'errors': error, 'user': UserSerializer(user).data}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
+#                 return Response(error, status=status.HTTP_404_NOT_FOUND)
+#         return Response({}, template_name=self.template_name)
 
 class CreateProfileView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/profile.html'
+    template_name = 'core/create_profile.html'
     
-    def get(self, request, user_id=None):
-        context = {}
-        if user_id:
-            try:
-                user = User.objects.get(user_id=user_id)
-                context['user'] = UserSerializer(user).data
-            except User.DoesNotExist:
-                context['errors'] = {"error": "User not found."}
-        return Response(context, template_name=self.template_name)
+    def get(self, request, user_id):
+        # Check if user exists
+        try:
+            user = User.objects.get(pk=user_id)
+            # Check if profile already exists
+            if Profile.objects.filter(user=user).exists():
+                if request.accepted_renderer.format == 'html':
+                    return Response({
+                        'redirect': True, 
+                        'redirect_url': f'/api/profile/{user_id}/'
+                    }, template_name=self.template_name)
+                return Response({"error": "Profile already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'user': UserSerializer(user).data}, template_name=self.template_name)
+        except User.DoesNotExist:
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': {'error': 'User not found'}}, template_name=self.template_name)
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
     
     def post(self, request, user_id):
         try:
-            user = User.objects.get(user_id=user_id)
-            data = request.data.copy()
-            data['user'] = user_id
-            serializer = ProfileSerializer(data=data)
-            if serializer.is_valid():
-                serializer.save()
-                if request.accepted_renderer.format == 'html':
-                    return Response({'profile': serializer.data}, template_name=self.template_name, status=status.HTTP_201_CREATED)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-                
-            if request.accepted_renderer.format == 'html':
-                return Response({'errors': serializer.errors}, template_name=self.template_name, status=status.HTTP_400_BAD_REQUEST)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            user = User.objects.get(pk=user_id)
             
+            # Create profile data
+            profile_data = {
+                'user': user_id,
+                'bio': request.data.get('bio', ''),
+                'skills': request.data.get('skills', []),
+                'education': request.data.get('education', '')
+            }
+            
+            serializer = ProfileSerializer(data=profile_data)
+            if serializer.is_valid():
+                profile = serializer.save()
+                
+                if request.accepted_renderer.format == 'html':
+                    return Response({
+                        'success': True,
+                        'profile': ProfileSerializer(profile).data,
+                        'redirect': True,
+                        'redirect_url': f'/api/profile/{user_id}/'
+                    }, template_name=self.template_name)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                if request.accepted_renderer.format == 'html':
+                    return Response({
+                        'errors': serializer.errors,
+                        'user': UserSerializer(user).data
+                    }, template_name=self.template_name)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
         except User.DoesNotExist:
-            error = {"error": "User not found."}
             if request.accepted_renderer.format == 'html':
-                return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
-            return Response(error, status=status.HTTP_404_NOT_FOUND)
+                return Response({'errors': {'error': 'User not found'}}, template_name=self.template_name)
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class UpdateProfileView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/profile.html'
+    template_name = 'core/update_profile.html'
     
-    def get(self, request, profile_id=None):
-        context = {}
-        if profile_id:
-            try:
-                profile = Profile.objects.get(profile_id=profile_id)
-                serializer = ProfileSerializer(profile)
-                context['profile'] = serializer.data
-            except Profile.DoesNotExist:
-                context['errors'] = {"error": "Profile not found."}
-        return Response(context, template_name=self.template_name)
+    def get(self, request, profile_id):
+        try:
+            profile = Profile.objects.get(pk=profile_id)
+            return Response({
+                'profile': ProfileSerializer(profile).data,
+                'user': UserSerializer(profile.user).data
+            }, template_name=self.template_name)
+        except Profile.DoesNotExist:
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': {'error': 'Profile not found'}}, template_name=self.template_name)
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
     
     def put(self, request, profile_id):
         try:
-            profile = Profile.objects.get(profile_id=profile_id)
+            profile = Profile.objects.get(pk=profile_id)
             serializer = ProfileSerializer(profile, data=request.data, partial=True)
+            
             if serializer.is_valid():
                 serializer.save()
-                if request.accepted_renderer.format == 'html':
-                    return Response({'profile': serializer.data}, template_name=self.template_name)
-                return Response(serializer.data)
                 
-            if request.accepted_renderer.format == 'html':
-                return Response({'errors': serializer.errors}, template_name=self.template_name, status=status.HTTP_400_BAD_REQUEST)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+                if request.accepted_renderer.format == 'html':
+                    return Response({
+                        'success': True,
+                        'profile': ProfileSerializer(profile).data,
+                        'user': UserSerializer(profile.user).data
+                    }, template_name=self.template_name)
+                return Response(serializer.data)
+            else:
+                if request.accepted_renderer.format == 'html':
+                    return Response({
+                        'errors': serializer.errors,
+                        'profile': ProfileSerializer(profile).data,
+                        'user': UserSerializer(profile.user).data
+                    }, template_name=self.template_name)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
         except Profile.DoesNotExist:
-            error = {"error": "Profile not found."}
             if request.accepted_renderer.format == 'html':
-                return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
-            return Response(error, status=status.HTTP_404_NOT_FOUND)
+                return Response({'errors': {'error': 'Profile not found'}}, template_name=self.template_name)
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class GetProfileView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
     template_name = 'core/profile.html'
     
-    def get(self, request, user_id=None):
-        if user_id:
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(pk=user_id)
             try:
-                user = User.objects.get(user_id=user_id)
                 profile = Profile.objects.get(user=user)
-                serializer = ProfileSerializer(profile)
-                if request.accepted_renderer.format == 'html':
-                    return Response({'profile': serializer.data, 'user': UserSerializer(user).data}, template_name=self.template_name)
-                return Response(serializer.data)
-            except User.DoesNotExist:
-                error = {"error": "User not found."}
-                if request.accepted_renderer.format == 'html':
-                    return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
-                return Response(error, status=status.HTTP_404_NOT_FOUND)
+                
+                # Get additional user data based on role
+                role_data = {}
+                if user.role == 'Student':
+                    try:
+                        student = Student.objects.get(user=user)
+                        role_data = StudentSerializer(student).data
+                    except Student.DoesNotExist:
+                        pass
+                elif user.role == 'Alumnus':
+                    try:
+                        alumnus = Alumnus.objects.get(user=user)
+                        role_data = AlumnusSerializer(alumnus).data
+                    except Alumnus.DoesNotExist:
+                        pass
+                
+                return Response({
+                    'user': UserSerializer(user).data,
+                    'profile': ProfileSerializer(profile).data,
+                    'role_data': role_data
+                }, template_name=self.template_name)
+                
             except Profile.DoesNotExist:
-                error = {"error": "Profile not found for this user."}
+                # If profile doesn't exist, redirect to create profile
                 if request.accepted_renderer.format == 'html':
-                    return Response({'errors': error, 'user': UserSerializer(user).data}, template_name=self.template_name, status=status.HTTP_404_NOT_FOUND)
-                return Response(error, status=status.HTTP_404_NOT_FOUND)
-        return Response({}, template_name=self.template_name)
+                    return Response({
+                        'redirect': True,
+                        'redirect_url': f'/api/profile/create/{user_id}/'
+                    }, template_name=self.template_name)
+                return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+                
+        except User.DoesNotExist:
+            if request.accepted_renderer.format == 'html':
+                return Response({'errors': {'error': 'User not found'}}, template_name=self.template_name)
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
