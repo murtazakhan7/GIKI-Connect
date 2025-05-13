@@ -10,7 +10,7 @@ from .views import ( NotificationAPI, StudentMentorshipAPI, AlumniMentorshipAPI,
 app_name = 'core'
 
 urlpatterns = [
-    # Notification endpoints
+    # Notification endpoints - CHECK
     path('notifications/<int:user_id>/', NotificationAPI.as_view(), name='user_notifications'),
     path('notifications/read/<int:pk>/', NotificationAPI.as_view(), name='mark_notification_read'),
     path('notifications/read-all/', NotificationAPI.as_view(), name='mark_all_notifications_read'),
@@ -27,12 +27,12 @@ urlpatterns = [
     path('mentorship/status/<int:user_id>/<int:match_id>/', MentorshipStatusAPI.as_view(), name='update_mentorship_status'),
     path('mentorship/getmentor/<int:user_id>/',ShowMentorAPI.as_view(), name='get_mentor'),
 
-    # Event endpoints
+    # Event endpoints - CHECK
     path('events/', EventListView.as_view(), name='list_events'),
     path('events/create/<int:user_id>/', EventListView.as_view(), name='create_event'),
-    path('events/<int:event_id>/rsvp/', RSVPEventView.as_view(), name='rsvp_event'),
+    path('events/<int:event_id>/rsvp/<int:user_id>/', RSVPEventView.as_view(), name='rsvp_event'),
     path('events/<int:event_id>/attendees/', EventAttendeesView.as_view(), name='event_attendees'),
-    path('events/<int:event_id>/update/', EventUpdateView.as_view(), name='update_event'),
+    path('events/<int:event_id>/update/<int:user_id>/', EventUpdateView.as_view(), name='update_event'),
 
     # Group endpoints
     path('group/join/<int:group_id>/', JoinGroupView.as_view(), name='join_group'),
@@ -52,18 +52,16 @@ urlpatterns = [
     path('group/list/', ListGroupsView.as_view(), name='list_groups'),
     path('group/approved/<int:user_id>/', ApprovedGroupsView.as_view(), name='approved_groups'),
     
-    # Connection endpoints
+    # Connection endpoints - CHECK
     path('connections/send/<int:sender_id>/<int:receiver_id>/',  SendConnectionRequestAPI.as_view(),  name='send_connection_request'),
     path('connections/sent/<int:user_id>/', SendConnectionRequestAPI.as_view(), name='view_sent_requests'),
     path('connections/manage/<int:request_id>/', ManageConnectionRequestAPI.as_view(), name='manage_connection_request'),
     path('connections/received/<int:receiver_id>/', ViewReceivedRequestsAPI.as_view(), name='view_received_requests'),
     path('connections/list/<int:user_id>/', ViewConnectionsAPI.as_view(), name='view_all_connections'),
-    path('connections/remove/<int:user_id>/<int:connection_id>/', ManageConnectionRequestAPI.as_view(), name='remove_connection'),
-    path('connections/cancel/<int:sender_id>/<int:receiver_id>/', ManageConnectionRequestAPI.as_view(), name='cancel_connection_request'),
     
-    # Message endpoints
+    # Message endpoints - CHECK
     path('messages/<int:user_id>/', MessageView.as_view(), name='list_messages'),  # List of users user can talk to
-    path('messages/send/<int:message_id>/', SendMessageView.as_view(), name='send_message'),  # Add new message to chat
+    path('messages/send/<int:message_id>/<int:user_id>/', SendMessageView.as_view(), name='send_message'),  # Add new message to chat
     path('messages/view/<int:message_id>/', ViewMessage.as_view(), name='view_message'),  # View full conversation
 
     # Job post endpoints - CHECK
