@@ -468,7 +468,7 @@ class RSVPEventView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
     template_name = 'core/attend_event.html'
     
-    def get(self, request, event_id=None):
+    def get(self, request, event_id=None, user_id=None):
         # Render the empty form on GET requests
         if event_id:
             event = get_object_or_404(Event, pk=event_id)
@@ -476,9 +476,9 @@ class RSVPEventView(APIView):
             return Response({'event': event_data}, template_name=self.template_name)
         return Response({}, template_name=self.template_name)
     
-    def post(self, request, event_id):
+    def post(self, request, event_id, user_id):
         event = get_object_or_404(Event, pk=event_id)
-        user = request.user
+        user = User.objects.get(user_id=user_id)
 
         if event.start <= now():
             error = {"error": "Cannot RSVP to past events."}
@@ -506,9 +506,9 @@ class RSVPEventView(APIView):
             return Response({'attendee': attendee_data}, template_name=self.template_name, status=201)
         return Response(attendee_data, status=201)
 
-    def put(self, request, event_id):
+    def put(self, request, event_id, user_id):
         event = get_object_or_404(Event, pk=event_id)
-        user = request.user
+        user = User.objects.get(user_id=user_id)
 
         if event.start <= now():
             error = {"error": "Cannot change RSVP for past events."}
@@ -542,17 +542,18 @@ class EventUpdateView(APIView):
     renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
     template_name = 'core/event.html'
     
-    def get(self, request, event_id=None):
+    def get(self, request, event_id=None, user_id=None):
         if event_id:
             event = get_object_or_404(Event, pk=event_id)
             event_data = EventSerializer(event).data
             return Response({'event': event_data}, template_name=self.template_name)
         return Response({}, template_name=self.template_name)
     
-    def put(self, request, event_id):
+    def put(self, request, event_id, user_id):
         event = get_object_or_404(Event, pk=event_id)
+        user = User.objects.get(user_id=user_id)
 
-        if request.user != event.organizer:
+        if user.user_id != event.organizer.user_id:
             error = {"error": "Only the event organizer can update this event."}
             if request.accepted_renderer.format == 'html':
                 return Response({'errors': error}, template_name=self.template_name, status=403)
@@ -564,7 +565,7 @@ class EventUpdateView(APIView):
         event.capacity = request.data.get("capacity", event.capacity)
         event.save()
 
-        attendees = EventAttendee.objects.filter(event=event).exclude(user=request.user)
+        attendees = EventAttendee.objects.filter(event=event).exclude(user=user.user_id)
         for attendee in attendees:
             Notification.objects.create(
                 user=attendee.user,
@@ -625,7 +626,7 @@ class ApproveRequestView(APIView):
         return Response(context, template_name=self.template_name)
     
     def post(self, request, group_id, user_id):
-        approver = request.user
+        approver = User.objects.get(user_id=user_id)
         group = Group.objects.get(id=group_id)
 
         approver_member = GroupMember.objects.filter(user=approver, group=group, role="moderator").first()
@@ -669,7 +670,7 @@ class MakeModeratorView(APIView):
         return Response(context, template_name=self.template_name)
     
     def post(self, request, group_id, user_id):
-        actor = request.user
+        actor = User.objects.get(user_id=user_id)
         group = Group.objects.get(id=group_id)
 
         if not GroupMember.objects.filter(user=actor, group=group, role="moderator").exists():
@@ -807,7 +808,7 @@ class KickMemberView(APIView):
     template_name = 'core/connections.html'
     
     def post(self, request, group_id, user_id):
-        actor = request.user
+        actor = User.objects.get(user_id=user_id)
         group = Group.objects.get(id=group_id)
 
         if not GroupMember.objects.filter(user=actor, group=group, role="moderator").exists():
@@ -1175,6 +1176,11 @@ class ManageConnectionRequestAPI(APIView):
         action = request.data.get('action', '')
         
         if action == 'accept':
+            Message.objects.create(
+                user1=ConnectionRequest.objects.get(pk=request_id).from_user,
+                user2=ConnectionRequest.objects.get(pk=request_id).to_user,
+                chat_history=[]
+            )
             return self.accept_request(request, request_id)
         elif action == 'reject':
             return self.reject_request(request, request_id)
@@ -1280,10 +1286,10 @@ class MessageView(APIView):
             messages = Message.objects.filter(user1_id=user_id) | Message.objects.filter(user2_id=user_id)
             users = []
             for msg in messages:
-                other_user = msg.user2 if msg.user1.id == int(user_id) else msg.user1
+                other_user = msg.user2 if msg.user1.user_id == int(user_id) else msg.user1
                 users.append({
                     "user": UserSerializer(other_user).data,
-                    "message_id": msg.id
+                    "message_id": msg.message_id
                 })
             context['users'] = users
             
@@ -1293,7 +1299,7 @@ class MessageView(APIView):
         # If no user_id, return empty response for JSON
         if not user_id:
             return Response([])
-            
+       
         return Response(context.get('users', []), status=status.HTTP_200_OK)
 
 class ViewMessage(APIView):
@@ -1308,13 +1314,13 @@ class ViewMessage(APIView):
             message_data = MessageSerializer(message).data
             context['message'] = message_data
             
-        if request.accepted_renderer.format == 'html':
-            return Response(context, template_name=self.template_name)
             
         # If no message_id, return empty response for JSON
         if not message_id:
             return Response({})
-            
+        if request.accepted_renderer.format == 'html':
+            return Response({'message': message_data}, template_name=self.template_name)
+        
         return Response(context.get('message', {}))
 
 
@@ -1329,35 +1335,35 @@ class SendMessageView(APIView):
             context['message'] = MessageSerializer(message).data
         return Response(context, template_name=self.template_name)
     
-    def post(self, request, message_id):
+    def post(self, request, message_id, user_id=None):
         message = get_object_or_404(Message, pk=message_id)
-        sender_id = request.data.get("sender")
+        sender = User.objects.get(user_id=user_id)
+        reciever = Message.objects.get(pk=message_id).user2 if message.user1.user_id == int(sender.user_id) else message.user1
         msg_text = request.data.get("message")
 
-        if not sender_id or not msg_text:
+        if not sender or not msg_text:
             error = {"error": "Missing sender or message"}
             if request.accepted_renderer.format == 'html':
                 return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_400_BAD_REQUEST)
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         message.chat_history.append({
-            "sender": sender_id,
+            "sender": sender.name,
+            "sender_id": sender.user_id,
             "message": msg_text,
             "timestamp": now().isoformat()
         })
         message.save()
 
         # Create a notification for the other user
-        recipient = message.user2 if message.user1.id == int(sender_id) else message.user1
+        reciever = message.user2 if message.user1.user_id == int(sender.user_id) else message.user1
         Notification.objects.create(
-            user=recipient,
+            user=reciever,
             type="Message",
-            content=f"New message from user {sender_id} at {now().strftime('%H:%M %d/%m/%Y')}"
+            content=f"New message from user {sender.name} at {now().strftime('%H:%M %d/%m/%Y')}"
         )
 
         message_data = MessageSerializer(message).data
-        if request.accepted_renderer.format == 'html':
-            return Response({'message': message_data}, template_name=self.template_name)
         return Response(message_data)
 
 class JobPostAPI(APIView):
@@ -1405,17 +1411,6 @@ class JobPostAPI(APIView):
             return Response({'errors': error}, template_name=self.template_name, status=status.HTTP_403_FORBIDDEN)
         return Response(error, status=status.HTTP_403_FORBIDDEN)
 
-
-class IncomingConnectionRequestsAPI(APIView):
-    renderer_classes = [JSONRenderer, TemplateHTMLRenderer]
-    template_name = 'core/connections.html'
-
-    def get(self, request):
-        requests = ConnectionRequest.objects.filter(to_user=request.user, status='Pending')
-        serializer = ConnectionRequestSerializer(requests, many=True)
-        if request.accepted_renderer.format == 'html':
-            return Response({'requests': serializer.data, 'title': 'Incoming Connection Requests'}, template_name=self.template_name)
-        return Response(serializer.data)
 
 
 # class SignUpView(APIView):
