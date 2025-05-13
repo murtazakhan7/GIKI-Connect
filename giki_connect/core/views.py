@@ -1193,11 +1193,11 @@ class SignUpView(APIView):
     def post(self, request):
         # Handle signin
         if request.path.endswith('/signin/'):
-            email = request.data.get('email')
+            mail = request.data.get('email')
             password = request.data.get('password')
             
             try:
-                user = User.objects.get(email=email)
+                user = User.objects.get(mail=mail)
                 
                 # Check if password matches
                 if not check_password(password, user.password_hash):
