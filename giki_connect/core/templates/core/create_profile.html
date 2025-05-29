@@ -1,0 +1,219 @@
+{% extends 'core/layout.html' %}
+{% load static %}
+
+{% block CSS %}
+<style>
+    .profile-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .profile-header {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .profile-form {
+        background-color: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+    }
+    
+    .form-group textarea {
+        height: 150px;
+        resize: vertical;
+    }
+    
+    .skills-input {
+        margin-top: 10px;
+    }
+    
+    .skills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .skill-tag {
+        background-color: var(--accent-color);
+        padding: 5px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .skill-tag .remove-skill {
+        margin-left: 8px;
+        cursor: pointer;
+        color: var(--light-text);
+    }
+    
+    .skill-tag .remove-skill:hover {
+        color: var(--text-color);
+    }
+    
+    .add-skill-btn {
+        margin-top: 10px;
+        background-color: var(--accent-color);
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .form-actions {
+        margin-top: 30px;
+        text-align: center;
+    }
+    
+    .errors {
+        margin-bottom: 20px;
+        color: #e53e3e;
+        padding: 10px;
+        border-radius: 4px;
+        background-color: #fed7d7;
+    }
+</style>
+{% endblock %}
+
+{% block JS %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Skills management
+        const skillsInput = document.getElementById('skills-input');
+        const skillsContainer = document.getElementById('skills-container');
+        const skillsHiddenInput = document.getElementById('skills');
+        const addSkillBtn = document.getElementById('add-skill-btn');
+        
+        // Initialize skills array
+        let skills = [];
+        
+        // Function to update the hidden input with the current skills
+        function updateSkillsInput() {
+            skillsHiddenInput.value = JSON.stringify(skills);
+        }
+        
+        // Function to render the skills tags
+        function renderSkills() {
+            skillsContainer.innerHTML = '';
+            
+            skills.forEach((skill, index) => {
+                const skillTag = document.createElement('div');
+                skillTag.className = 'skill-tag';
+                skillTag.innerHTML = `
+                    ${skill}
+                    <span class="remove-skill" data-index="${index}">×</span>
+                `;
+                skillsContainer.appendChild(skillTag);
+            });
+            
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-skill').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    skills.splice(index, 1);
+                    renderSkills();
+                    updateSkillsInput();
+                });
+            });
+        }
+        
+        // Add skill button click handler
+        addSkillBtn.addEventListener('click', function() {
+            const skill = skillsInput.value.trim();
+            
+            if (skill && !skills.includes(skill)) {
+                skills.push(skill);
+                skillsInput.value = '';
+                renderSkills();
+                updateSkillsInput();
+            }
+        });
+        
+        // Allow pressing Enter to add a skill
+        skillsInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSkillBtn.click();
+            }
+        });
+        
+        // Initialize
+        updateSkillsInput();
+    });
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Create Your Profile</h1>
+        <p>Complete your profile to connect with others and share your experience</p>
+        {% if user %}
+        <p>User ID: {{ user.user_id }}</p>
+        {% else %}
+        <p>User ID (from context): {{ user_id }}</p>
+        {% endif %}
+    </div>
+    
+    {% if errors %}
+    <div class="errors">
+        {% for key, error in errors.items %}
+        <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="profile-form">
+        <form action="{{ request.path }}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="user_id" value="{% if user.user_id %}{{ user.user_id }}{% else %}{{ user_id }}{% endif %}">
+            
+            <div class="form-group">
+                <label for="bio">Bio</label>
+                <textarea id="bio" name="bio" placeholder="Tell us about yourself"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="education">Education</label>
+                <textarea id="education" name="education" placeholder="Share your educational background"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Skills</label>
+                <div class="skills-input">
+                    <input type="text" id="skills-input" placeholder="Enter a skill">
+                    <button type="button" id="add-skill-btn" class="add-skill-btn">Add</button>
+                </div>
+                <div id="skills-container" class="skills-container"></div>
+                <input type="hidden" id="skills" name="skills" value="[]">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Create Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -304,11 +304,7 @@
         {% endblock %}
     </div>
     
-    <div id="app-data" 
-         data-has-redirect="{% if redirect %}true{% else %}false{% endif %}" 
-         data-redirect-url="{% if redirect_url %}{{ redirect_url }}{% endif %}"
-         data-message="{% if message %}{{ message }}{% endif %}">
-    </div>
+   
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -321,21 +317,6 @@
                 });
             }
             
-            // Get data from the data attributes
-            const appData = document.getElementById('app-data');
-            const hasRedirect = appData.dataset.hasRedirect === 'true';
-            const redirectUrl = appData.dataset.redirectUrl;
-            const message = appData.dataset.message;
-            
-            // Handle redirects if specified
-            if (hasRedirect && redirectUrl) {
-                window.location.href = redirectUrl;
-            }
-            
-            // Display messages if present
-            if (message) {
-                alert(message);
-            }
         });
     </script>
 </body>

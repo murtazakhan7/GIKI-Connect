@@ -10,7 +10,7 @@
     <div class="posts-header">
         <h1>Recent Posts</h1>
         <div class="search-bar">
-            <form method="GET" action="{% url 'posts' %}">
+            <form method="GET" action="{% url 'core:all-posts' %}">
                 <input type="text" name="search" placeholder="Search posts..." value="{{ request.GET.search|default_if_none:'' }}">
                 <button type="submit" class="search-btn">Search</button>
             </form>
@@ -18,9 +18,9 @@
     </div>
 
     <div class="posts-filters">
-        <a href="{% url 'posts' %}" class="filter-btn {% if not category %}active{% endif %}">All Posts</a>
-        <a href="{% url 'posts' %}?category=Opportunities" class="filter-btn {% if category == 'Opportunities' %}active{% endif %}">Opportunities</a>
-        <a href="{% url 'posts' %}?category=Announcements" class="filter-btn {% if category == 'Announcements' %}active{% endif %}">Announcements</a>
+        <a href="{% url 'core:all-posts' %}" class="filter-btn {% if not category %}active{% endif %}">All Posts</a>
+        <a href="{% url 'core:all-posts' %}?category=Opportunities" class="filter-btn {% if category == 'Opportunities' %}active{% endif %}">Opportunities</a>
+        <a href="{% url 'core:all-posts' %}?category=Announcements" class="filter-btn {% if category == 'Announcements' %}active{% endif %}">Announcements</a>
     </div>
 
     <!-- Create Post Card -->

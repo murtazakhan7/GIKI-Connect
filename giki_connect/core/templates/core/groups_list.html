@@ -218,6 +218,7 @@
             <button class="close-modal" onclick="closeCreateGroupModal()">&times;</button>
         </div>
         
+        {% if user and user.user_id %}
         <form action="{% url 'core:create_group' user.user_id %}" method="POST">
             {% csrf_token %}
             <div class="form-group">
@@ -237,6 +238,11 @@
             
             <button type="submit" class="btn btn-primary">Create Group</button>
         </form>
+        {% else %}
+        <div class="alert alert-warning">
+            <p>You must be logged in to create a group. <a href="{% url 'core:signin' %}">Log in here</a></p>
+        </div>
+        {% endif %}
     </div>
 </div>
 

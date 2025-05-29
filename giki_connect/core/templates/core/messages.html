@@ -287,267 +287,235 @@
 {% endblock %}
 
 
-{% block JS %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get elements
-        const conversationItems = document.querySelectorAll('.conversation-item');
-        const noConversationSelected = document.getElementById('no-conversation-selected');
-        const conversationView = document.getElementById('conversation-view');
-        const messagesList = document.getElementById('messages-list');
-        const receiverName = document.getElementById('receiver-name');
-        const receiverInitial = document.getElementById('receiver-initial');
-        const messageForm = document.getElementById('message-form');
-        const messageContent = document.getElementById('message-content');
-        const senderId = document.getElementById('sender-id');
-        const messageId = document.getElementById('message-id');
-        
-        // New message modal elements
-        const newMessageBtn = document.getElementById('new-message-btn');
-        const newMessageModal = document.getElementById('new-message-modal');
-        const closeModal = document.querySelector('.close-modal');
-        const newMessageForm = document.getElementById('new-message-form');
-        const receiverSearch = document.getElementById('receiver-search');
-        const searchResults = document.getElementById('user-search-results');
-        
-        // Set current user ID
-        const currentUserId = '{{ user.user_id }}';
-        senderId.value = currentUserId;
-        
-        // Handle conversation selection
-        conversationItems.forEach(item => {
-            item.addEventListener('click', function() {
-                // Remove active class from all items
-                conversationItems.forEach(i => i.classList.remove('active'));
-                
-                // Add active class to clicked item
-                this.classList.add('active');
-                
-                // Get user data
-                const userId = this.getAttribute('data-user-id');
-                const messageId = this.getAttribute('data-message-id');
-                const userName = this.querySelector('h3').textContent;
-                const userInitial = userName.charAt(0);
-                
-                // Update conversation view
-                receiverName.textContent = userName;
-                receiverInitial.textContent = userInitial;
-                document.getElementById('message-id').value = messageId;
-                
-                // Show conversation view, hide empty state
-                noConversationSelected.classList.add('hidden');
-                conversationView.classList.remove('hidden');
-                
-                // Load messages for this conversation
-                loadMessages(messageId);
-            });
-        });
-        
-        // Function to load messages
-        function loadMessages(messageId) {
-            // In a real app, you would fetch messages from the server
-            // For now, we'll just scroll to the bottom of the messages list
-            setTimeout(() => {
-                messagesList.scrollTop = messagesList.scrollHeight;
-            }, 100);
-        }
-        
-        // Handle message form submission
-        messageForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const message = messageContent.value.trim();
-            if (!message) return;
-            
-            // In a real app, you would send the message to the server
-            // For now, we'll just add it to the UI
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message sent';
-            messageElement.innerHTML = `
-                <div class="message-content">
-                    <p>${message}</p>
-                    <span class="message-time">Just now</span>
-                </div>
-            `;
-            
-            messagesList.appendChild(messageElement);
-            messageContent.value = '';
-            
-            // Scroll to the bottom
-            messagesList.scrollTop = messagesList.scrollHeight;
-            
-            // Submit the form
-            this.submit();
-        });
-        
-        // New message modal
-        if (newMessageBtn) {
-            newMessageBtn.addEventListener('click', function() {
-                newMessageModal.style.display = 'block';
-            });
-        }
-        
-        if (closeModal) {
-            closeModal.addEventListener('click', function() {
-                newMessageModal.style.display = 'none';
-            });
-        }
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', function(event) {
-            if (event.target === newMessageModal) {
-                newMessageModal.style.display = 'none';
-            }
-        });
-        
-        // Handle user search
-        if (receiverSearch) {
-            receiverSearch.addEventListener('input', function() {
-                const query = this.value.trim();
-                
-                if (query.length < 2) {
-                    searchResults.innerHTML = '';
-                    return;
-                }
-                
-                // In a real app, you would search users from the server
-                // For now, we'll just show a placeholder
-                searchResults.innerHTML = `
-                    <div class="search-result-item" data-user-id="1">
-                        <div class="user-info">
-                            <h3>John Doe</h3>
-                            <p>john.doe@example.com</p>
-                        </div>
-                    </div>
-                `;
-                
-                // Handle search result selection
-                const searchResultItems = document.querySelectorAll('.search-result-item');
-                searchResultItems.forEach(item => {
-                    item.addEventListener('click', function() {
-                        const userId = this.getAttribute('data-user-id');
-                        const userName = this.querySelector('h3').textContent;
-                        
-                        receiverSearch.value = userName;
-                        searchResults.innerHTML = '';
-                    });
-                });
-            });
-        }
-        
-        // Handle new message form submission
-        if (newMessageForm) {
-            newMessageForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // In a real app, you would send the new message to the server
-                // For now, we'll just close the modal
-                newMessageModal.style.display = 'none';
-            });
-        }
-    });
-</script>
-{% endblock %}
 
 {% block body %}
 <div class="messages-container">
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>Conversations</h2>
-            <button id="new-message-btn" class="btn btn-primary">New Message</button>
-        </div>
-        <div class="conversation-list">
-            {% for user in users %}
-                <div class="conversation-item" 
-                     data-user-id="{{ user.user.user_id }}"
-                     data-message-id="{{ user.message_id }}">
-                    <div class="user-avatar">
-                        <span>{{ user.user.name|first }}</span>
-                    </div>
-                    <div class="conversation-info">
-                        <h3>{{ user.user.name }}</h3>
-                        <p class="last-message">{{ user.user.email }}</p>
-                    </div>
-                </div>
-            {% empty %}
-                <div class="empty-state">
-                    <p>No conversations yet</p>
-                </div>
-            {% endfor %}
-        </div>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Conversations</h2>
+      <button id="new-message-btn" class="btn btn-primary">New Message</button>
     </div>
-    
-    <div class="message-area">
-        <div id="no-conversation-selected" class="empty-state-message">
-            <div class="empty-state-icon">
-                <i class="far fa-comment-dots"></i>
-            </div>
-            <h2>Select a conversation or start a new one</h2>
-            <p>Choose from your existing conversations or click "New Message" to start messaging</p>
+    <div class="conversation-list">
+      {% for conv in users %}
+        <div class="conversation-item"
+             data-user-id="{{ conv.user.user_id }}"
+             data-message-id="{{ conv.message_id }}">
+          <div class="user-avatar">
+            <span>{{ conv.user.name|first }}</span>
+          </div>
+          <div class="conversation-info">
+            <h3>{{ conv.user.name }}</h3>
+            <p class="last-message">{{ conv.user.email }}</p>
+          </div>
         </div>
-        
-        <div id="conversation-view" class="conversation-view hidden">
-            <div class="conversation-header">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <span id="receiver-initial"></span>
-                    </div>
-                    <h2 id="receiver-name"></h2>
-                </div>
-            </div>
-            
-            <div class="messages-list" id="messages-list">
-                <!-- Messages will be loaded dynamically -->
-                {% if message %}
-                    {% for chat in message.chat_history %}
-                        <div class="message {% if chat.sender == user.user_id %}sent{% else %}received{% endif %}">
-                            <div class="message-content">
-                                <p>{{ chat.message }}</p>
-                                <span class="message-time">{{ chat.timestamp }}</span>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-            
-            <div class="message-composer">
-                <form id="message-form" action="{% url 'core:send_message' message.id %}" method="post">
-                    {% csrf_token %}
-                    <input type="hidden" id="sender-id" name="sender">
-                    <input type="hidden" id="message-id" name="message_id">
-                    <textarea id="message-content" name="message" placeholder="Type a message..."></textarea>
-                    <button type="submit" class="btn btn-primary send-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </form>
-            </div>
+      {% empty %}
+        <div class="empty-state">
+          <p>No conversations yet</p>
         </div>
+      {% endfor %}
     </div>
+  </div>
+
+  <div class="message-area">
+    <div id="no-conversation-selected" class="empty-state-message">
+      <div class="empty-state-icon">
+        <i class="far fa-comment-dots"></i>
+      </div>
+      <h2>Select a conversation or start a new one</h2>
+      <p>Choose from your existing conversations or click "New Message"</p>
+    </div>
+
+    <div id="conversation-view" class="conversation-view hidden">
+      <div class="conversation-header">
+        <div class="user-info">
+          <div class="user-avatar">
+            <span id="receiver-initial"></span>
+          </div>
+          <h2 id="receiver-name"></h2>
+        </div>
+      </div>
+
+      <div class="messages-list" id="messages-list">
+        {% if message %}
+          {% for chat in message.chat_history %}
+            <div class="message {% if chat.sender_id == user.user_id %}sent{% else %}received{% endif %}">
+              <div class="message-content">
+                <p>{{ chat.message }}</p>
+                <span class="message-time">{{ chat.timestamp }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="message-composer">
+        {% if message %}
+          <form id="message-form"
+                method="post">
+            {% csrf_token %}
+            <input type="hidden" id="sender-id"   name="sender"     value="{{ user.user_id }}">
+            <input type="hidden" id="message-id"  name="message_id" value="{{ message.message_id }}">
+            <textarea id="message-content"
+                      name="message"
+                      placeholder="Type a message..."
+                      required></textarea>
+            <button type="submit" class="btn btn-primary send-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </form>
+        {% else %}
+          <p class="text-muted">Select a conversation to start messaging.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- New Message Modal -->
 <div class="modal" id="new-message-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>New Message</h2>
-            <span class="close-modal">&times;</span>
-        </div>
-        <div class="modal-body">
-            <form id="new-message-form">
-                <div class="form-group">
-                    <label for="receiver-search">To:</label>
-                    <input type="text" id="receiver-search" name="receiver_search" 
-                           placeholder="Search for a user...">
-                    <div id="user-search-results" class="search-results"></div>
-                </div>
-                <div class="form-group">
-                    <label for="new-message-content">Message:</label>
-                    <textarea id="new-message-content" name="content" 
-                              placeholder="Type your message here..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Send</button>
-            </form>
-        </div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>New Message</h2>
+      <span class="close-modal">&times;</span>
     </div>
+    <div class="modal-body">
+      <form id="new-message-form">
+        <div class="form-group">
+          <label for="receiver-search">To:</label>
+          <input type="text" id="receiver-search" name="receiver_search"
+                 placeholder="Search for a user...">
+          <div id="user-search-results" class="search-results"></div>
+        </div>
+        <div class="form-group">
+          <label for="new-message-content">Message:</label>
+          <textarea id="new-message-content" name="content"
+                    placeholder="Type your message here..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block JS %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const conversationItems      = document.querySelectorAll('.conversation-item');
+  const noConversationSelected = document.getElementById('no-conversation-selected');
+  const conversationView       = document.getElementById('conversation-view');
+  const messagesList           = document.getElementById('messages-list');
+  const receiverName           = document.getElementById('receiver-name');
+  const receiverInitial        = document.getElementById('receiver-initial');
+  const messageForm            = document.getElementById('message-form');
+  const messageContent         = document.getElementById('message-content');
+  const senderIdInput          = document.getElementById('sender-id');
+  const messageIdInput         = document.getElementById('message-id');
+
+  // Logged‑in user
+  const currentUserId = '{{ user.user_id }}';
+  senderIdInput.value = currentUserId;
+
+  conversationItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // Mark active
+      conversationItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+
+      // Fetch attributes
+      const otherName      = item.querySelector('h3').textContent;
+      const otherInitial   = otherName.charAt(0);
+      const selectedMsgId  = item.getAttribute('data-message-id');
+
+      // Update header
+      receiverName.textContent    = otherName;
+      receiverInitial.textContent = otherInitial;
+
+      // Wire form
+      messageIdInput.value = selectedMsgId;
+      messageForm.action   = `/api/messages/send/${selectedMsgId}/`;
+
+      // Show view
+      noConversationSelected.classList.add('hidden');
+      conversationView.classList.remove('hidden');
+
+      // Scroll (or fetch) messages
+      setTimeout(() => {
+        messagesList.scrollTop = messagesList.scrollHeight;
+      }, 100);
+    });
+  });
+
+  // Submit handler
+  messageForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const txt = messageContent.value.trim();
+    if (!txt) return;
+
+    // Optimistic UI
+    const el = document.createElement('div');
+    el.className = 'message sent';
+    el.innerHTML = `
+      <div class="message-content">
+        <p>${txt}</p>
+        <span class="message-time">Just now</span>
+      </div>
+    `;
+    messagesList.appendChild(el);
+    messagesList.scrollTop = messagesList.scrollHeight;
+    messageContent.value = '';
+
+    // Real submit
+    messageForm.submit();
+  });
+
+  // New‑message modal
+  const newMessageBtn  = document.getElementById('new-message-btn');
+  const newMessageModal = document.getElementById('new-message-modal');
+  const closeModal      = document.querySelector('.close-modal');
+  const receiverSearch  = document.getElementById('receiver-search');
+  const searchResults   = document.getElementById('user-search-results');
+  const newMessageForm  = document.getElementById('new-message-form');
+
+  newMessageBtn?.addEventListener('click', () => {
+    newMessageModal.style.display = 'block';
+  });
+  closeModal?.addEventListener('click', () => {
+    newMessageModal.style.display = 'none';
+  });
+  window.addEventListener('click', e => {
+    if (e.target === newMessageModal) {
+      newMessageModal.style.display = 'none';
+    }
+  });
+
+  receiverSearch?.addEventListener('input', function() {
+    const q = this.value.trim();
+    if (q.length < 2) {
+      searchResults.innerHTML = '';
+      return;
+    }
+    // placeholder
+    searchResults.innerHTML = `
+      <div class="search-result-item" data-user-id="1">
+        <div class="user-info">
+          <h3>John Doe</h3>
+          <p>john.doe@example.com</p>
+        </div>
+      </div>
+    `;
+    document.querySelectorAll('.search-result-item').forEach(item =>
+      item.addEventListener('click', () => {
+        receiverSearch.value = item.querySelector('h3').textContent;
+        searchResults.innerHTML = '';
+      })
+    );
+  });
+
+  newMessageForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    newMessageModal.style.display = 'none';
+  });
+});
+</script>
 {% endblock %}

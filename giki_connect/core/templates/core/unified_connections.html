@@ -1,0 +1,687 @@
+{% extends 'core/layout.html' %}
+{% load static %}
+
+{% block CSS %}
+<style>
+    .connections-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .connections-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    
+    .search-container {
+        display: flex;
+    }
+    
+    .search-container input {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px 0 0 4px;
+        width: 250px;
+    }
+    
+    .search-container button {
+        border-radius: 0 4px 4px 0;
+    }
+    
+    .connections-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 30px;
+    }
+    
+    .tab-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--light-text);
+        position: relative;
+    }
+    
+    .tab-btn.active {
+        color: var(--primary-color);
+    }
+    
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: var(--primary-color);
+    }
+    
+    .badge {
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        padding: 0.2em 0.6em;
+        font-size: 0.8em;
+        margin-left: 5px;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .connections-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .connection-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 20px;
+        transition: transform 0.2s;
+    }
+    
+    .connection-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .connection-info h3 {
+        margin-bottom: 10px;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        background-color: var(--accent-color);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .details {
+        color: var(--light-text);
+        margin-bottom: 15px;
+    }
+    
+    .connection-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .pending-request, .sent-request {
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .request-time {
+        font-size: 0.8rem;
+        color: var(--light-text);
+        margin-bottom: 15px;
+    }
+    
+    .request-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--light-text);
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        grid-column: 1 / -1;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        width: 500px;
+        max-width: 90%;
+    }
+    
+    .close {
+        color: var(--light-text);
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        color: black;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    
+    .btn-danger {
+        background-color: #e53e3e;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background-color: #c53030;
+    }
+    
+    .btn-secondary {
+        background-color: var(--light-text);
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--text-color);
+    }
+    
+    /* Mentorship section styling */
+    .mentorship-section {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .mentorship-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .mentorship-status {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .status-pending {
+        background-color: #f0b429;
+        color: white;
+    }
+    
+    .status-active {
+        background-color: #38a169;
+        color: white;
+    }
+    
+    .status-completed {
+        background-color: #718096;
+        color: white;
+    }
+    
+    .mentorship-actions {
+        margin-top: 20px;
+    }
+    
+    .divider {
+        margin: 30px 0;
+        border-top: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block JS %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // —— Tab switching —— 
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+
+      this.classList.add('active');
+      const tabId = this.dataset.tab;
+      document.getElementById(tabId + '-tab').classList.add('active');
+    });
+  });
+
+  // —— Connection request modal —— 
+  const connectBtns           = document.querySelectorAll('.connect-btn');
+  const connectionModal       = document.getElementById('connection-modal');
+  const connectionForm        = document.getElementById('connection-request-form');
+  const toUserIdInput         = document.getElementById('to-user-id');
+  const closeConnectionModal  = connectionModal.querySelector('.close');
+  const cancelConnectionModal = connectionModal.querySelector('.cancel-modal');
+  const currentUserId         = document.body.dataset.userId;
+
+  connectBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetUserId = this.dataset.userid;
+      toUserIdInput.value = targetUserId;
+      // set the real POST endpoint
+      connectionForm.action = `/api/connections/send/${currentUserId}/${targetUserId}/`;
+      connectionModal.style.display = 'block';
+    });
+  });
+
+  closeConnectionModal.addEventListener('click', () => {
+    connectionModal.style.display = 'none';
+  });
+  cancelConnectionModal.addEventListener('click', () => {
+    connectionModal.style.display = 'none';
+  });
+
+  // —— Mentorship request modal —— 
+  const mentorBtns            = document.querySelectorAll('.request-mentor-btn');
+  const mentorshipModal       = document.getElementById('mentorship-modal');
+  const mentorshipForm        = document.getElementById('mentorship-request-form');
+  const mentorIdInput         = document.getElementById('mentor-id');
+  const closeMentorshipModal  = mentorshipModal.querySelector('.close');
+  const cancelMentorshipModal = mentorshipModal.querySelector('.cancel-modal');
+
+  mentorBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const mentorUserId = this.dataset.userid;
+      mentorIdInput.value = mentorUserId;
+      // set the real POST endpoint
+      mentorshipForm.action = `/api/mentorship/apply/${currentUserId}/${mentorUserId}/`;
+      mentorshipModal.style.display = 'block';
+    });
+  });
+
+  closeMentorshipModal.addEventListener('click', () => {
+    mentorshipModal.style.display = 'none';
+  });
+  cancelMentorshipModal.addEventListener('click', () => {
+    mentorshipModal.style.display = 'none';
+  });
+
+  // —— Close modals on outside‐click —— 
+  window.addEventListener('click', function(event) {
+    if (event.target === connectionModal) {
+      connectionModal.style.display = 'none';
+    }
+    if (event.target === mentorshipModal) {
+      mentorshipModal.style.display = 'none';
+    }
+  });
+
+  // —— Simple search/filter —— 
+  const searchInput     = document.getElementById('connection-search');
+  const connectionCards = document.querySelectorAll('.connection-card');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const term = this.value.toLowerCase().trim();
+      connectionCards.forEach(card => {
+        const name    = card.querySelector('h3')?.textContent.toLowerCase() || '';
+        const details = card.querySelector('.details')?.textContent.toLowerCase() || '';
+        card.style.display = (name.includes(term) || details.includes(term))
+                             ? 'block' : 'none';
+      });
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="connections-container">
+    <div class="connections-header">
+        <h1>My Network</h1>
+        <div class="search-container">
+            <input type="text" id="connection-search" placeholder="Search connections...">
+            <button class="btn btn-primary">Search</button>
+        </div>
+    </div>
+    
+    <!-- Display mentorship section if applicable -->
+    {% if user.role == 'Student' and active_mentorship %}
+    <div class="mentorship-section">
+        <div class="mentorship-header">
+            <h2>My Mentorship</h2>
+            <span class="mentorship-status status-{{ active_mentorship.status|lower }}">{{ active_mentorship.status }}</span>
+        </div>
+        <p>Mentor: {{ active_mentorship.mentor.user.name }} ({{ active_mentorship.mentor.job_title }} at {{ active_mentorship.mentor.employer }})</p>
+        <p>Started: {{ active_mentorship.created_at|date:"F j, Y" }}</p>
+        
+        <div class="mentorship-actions">
+            {% if active_mentorship.status == 'Active' %}
+            <form action="{% url 'core:update_mentorship_status' user.user_id active_mentorship.match_id %}" method="POST" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="Completed">
+                <button type="submit" class="btn btn-outline">Complete Mentorship</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% elif user.role == 'Student' and not active_mentorship and not pending_application %}
+    <div class="mentorship-section">
+        <h2>Looking for a Mentor?</h2>
+        <p>Connect with alumni who are interested in mentoring and request mentorship.</p>
+    </div>
+    {% elif user.role == 'Student' and pending_application %}
+    <div class="mentorship-section">
+        <div class="mentorship-header">
+            <h2>Mentorship Application</h2>
+            <span class="mentorship-status status-pending">Pending</span>
+        </div>
+        <p>Your application for mentorship is currently being reviewed.</p>
+        
+        <div class="mentorship-actions">
+            <form action="{% url 'core:withdraw_mentorship_application' user.user_id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Withdraw Application</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if user.role == 'Alumnus' and mentorship_applications %}
+    <div class="mentorship-section">
+        <h2>Mentorship Applications</h2>
+        <p>Students who have requested your mentorship:</p>
+        
+        <div class="connections-list">
+            {% for application in mentorship_applications %}
+            <div class="connection-card pending-request">
+                <div class="connection-info">
+                    <h3>{{ application.student.user.name }}</h3>
+                    <p class="role-badge">Student</p>
+                    <p class="details">{{ application.student.major }} | Class of {{ application.student.graduation_year }}</p>
+                    <p class="request-time">Applied {{ application.applied_at|timesince }} ago</p>
+                    
+                    <div class="request-actions">
+                        <a href="{% url 'core:get_profile' application.student.user.user_id %}" class="btn btn-outline">View Profile</a>
+                        <form action="{% url 'core:accept_mentorship' user.user_id application.application_id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Accept</button>
+                        </form>
+                        <form action="{% url 'core:reject_mentorship' user.user_id application.application_id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Decline</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if user.role == 'Alumnus' and active_mentorships %}
+    <div class="mentorship-section">
+        <h2>My Mentees</h2>
+        
+        <div class="connections-list">
+            {% for mentorship in active_mentorships %}
+            <div class="connection-card">
+                <div class="connection-info">
+                    <h3>{{ mentorship.mentee.user.name }}</h3>
+                    <p class="role-badge">Mentee</p>
+                    <p class="details">{{ mentorship.mentee.major }} | Class of {{ mentorship.mentee.graduation_year }}</p>
+                    <p class="status-badge status-{{ mentorship.status|lower }}">{{ mentorship.status }}</p>
+                    
+                    <div class="connection-actions">
+                        <a href="{% url 'core:get_profile' mentorship.mentee.user.user_id %}" class="btn btn-outline">View Profile</a>
+                        <a href="{% url 'core:list_messages' user.user_id %}" class="btn btn-outline">Message</a>
+                        
+                        {% if mentorship.status == 'Active' %}
+                        <form action="{% url 'core:update_mentorship_status' user.user_id mentorship.match_id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="Completed">
+                            <button type="submit" class="btn btn-outline">Complete</button>
+                        </form>
+                        {% elif mentorship.status == 'Pending' %}
+                        <form action="{% url 'core:update_mentorship_status' user.user_id mentorship.match_id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="Active">
+                            <button type="submit" class="btn btn-primary">Start Mentoring</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="divider"></div>
+    
+    <div class="connections-tabs">
+        <button class="tab-btn active" data-tab="connections">My Connections</button>
+        <button class="tab-btn" data-tab="pending">Pending Requests <span class="badge">{{ pending_requests_count|default:"0" }}</span></button>
+        <button class="tab-btn" data-tab="sent">Sent Requests <span class="badge">{{ sent_requests_count|default:"0" }}</span></button>
+        <button class="tab-btn" data-tab="suggestions">Suggestions</button>
+    </div>
+
+    <!-- My Connections Tab -->
+    <div class="tab-content active" id="connections-tab">
+        <div class="connections-list">
+            {% if connections %}
+                {% for connection in connections %}
+                    <div class="connection-card">
+                        <div class="connection-info">
+                            <h3>{{ connection.name }}</h3>
+                            <p class="role-badge">{{ connection.role }}</p>
+                            
+                            {% if connection.role == 'Student' %}
+                                <p class="details">{{ connection.student.major }} | Class of {{ connection.student.graduation_year }}</p>
+                            {% elif connection.role == 'Alumnus' %}
+                                <p class="details">{{ connection.alumnus.job_title }} at {{ connection.alumnus.employer }}</p>
+                            {% endif %}
+                            
+                            <div class="connection-actions">
+                                <a href="{% url 'core:get_profile' connection.user_id %}" class="btn btn-outline">View Profile</a>
+                                <a href="{% url 'core:list_messages' user.user_id %}" class="btn btn-outline">Message</a>
+                                {% if connection.role == 'Alumnus' and user.role == 'Student' and connection.alumnus.mentoring_interest and not active_mentorship and not pending_application %}
+                                    <button class="btn btn-outline request-mentor-btn" data-userid="{{ connection.user_id }}">Request Mentorship</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>You don't have any connections yet.</p>
+                    <p>Start building your network by connecting with other users!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Requests Tab -->
+    <div class="tab-content" id="pending-tab">
+        <div class="connections-list">
+            {% if pending_requests %}
+                {% for request in pending_requests %}
+                    <div class="connection-card pending-request">
+                        <div class="connection-info">
+                            <h3>{{ request.from_user.name }}</h3>
+                            <p class="role-badge">{{ request.from_user.role }}</p>
+                            
+                            {% if request.from_user.role == 'Student' %}
+                                <p class="details">{{ request.from_user.student.major }} | Class of {{ request.from_user.student.graduation_year }}</p>
+                            {% elif request.from_user.role == 'Alumnus' %}
+                                <p class="details">{{ request.from_user.alumnus.job_title }} at {{ request.from_user.alumnus.employer }}</p>
+                            {% endif %}
+                            
+                            <p class="request-time">Requested {{ request.requested_at|timesince }} ago</p>
+                            
+                            <div class="request-actions">
+                                <a href="{% url 'core:get_profile' request.from_user.user_id %}" class="btn btn-outline">View Profile</a>
+                                <form action="{% url 'core:manage_connection_request' request.request_id %}" method="POST" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="accept">
+                                    <button type="submit" class="btn btn-primary">Accept</button>
+                                </form>
+                                <form action="{% url 'core:manage_connection_request' request.request_id %}" method="POST" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn btn-danger">Decline</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>You don't have any pending connection requests.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sent Requests Tab -->
+    <div class="tab-content" id="sent-tab">
+        <div class="connections-list">
+            {% if sent_requests %}
+                {% for request in sent_requests %}
+                    <div class="connection-card sent-request">
+                        <div class="connection-info">
+                            <h3>{{ request.to_user.name }}</h3>
+                            <p class="role-badge">{{ request.to_user.role }}</p>
+                            
+                            {% if request.to_user.role == 'Student' %}
+                                <p class="details">{{ request.to_user.student.major }} | Class of {{ request.to_user.student.graduation_year }}</p>
+                            {% elif request.to_user.role == 'Alumnus' %}
+                                <p class="details">{{ request.to_user.alumnus.job_title }} at {{ request.to_user.alumnus.employer }}</p>
+                            {% endif %}
+                            
+                            <p class="request-time">Sent {{ request.requested_at|timesince }} ago</p>
+                            
+                            <div class="request-actions">
+                                <a href="{% url 'core:get_profile' request.to_user.user_id %}" class="btn btn-outline">View Profile</a>
+                                <form action="{% url 'core:manage_connection_request' request.request_id %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="cancel">
+                                    <button type="submit" class="btn btn-danger">Cancel Request</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>You haven't sent any connection requests.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Suggestions Tab -->
+    <div class="tab-content" id="suggestions-tab">
+        <div class="connections-list">
+            {% if suggestions %}
+                {% for suggestion in suggestions %}
+                    <div class="connection-card suggestion">
+                        <div class="connection-info">
+                            <h3>{{ suggestion.name }}</h3>
+                            <p class="role-badge">{{ suggestion.role }}</p>
+                            
+                            {% if suggestion.role == 'Student' %}
+                                <p class="details">{{ suggestion.student.major }} | Class of {{ suggestion.student.graduation_year }}</p>
+                            {% elif suggestion.role == 'Alumnus' %}
+                                <p class="details">{{ suggestion.alumnus.job_title }} at {{ suggestion.alumnus.employer }}</p>
+                            {% endif %}
+                            
+                            {% if suggestion.mutual_connections %}
+                                <p class="mutual-connections">{{ suggestion.mutual_connections }} mutual connection{{ suggestion.mutual_connections|pluralize }}</p>
+                            {% endif %}
+                            
+                            <div class="suggestion-actions">
+                                <a href="{% url 'core:get_profile' suggestion.user_id %}" class="btn btn-outline">View Profile</a>
+                                <button class="btn btn-primary connect-btn" data-userid="{{ suggestion.user_id }}">Connect</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>No connection suggestions available at the moment.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+<!-- Connection Request Modal -->
+<div id="connection-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Send Connection Request</h2>
+        <form id="connection-request-form"
+                 action="#"
+                  method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="to-user-id" name="to_user_id">
+            <div class="form-group">
+                <label for="message">Add a personal note (optional):</label>
+                <textarea id="message" name="message" rows="4" placeholder="Hi, I'd like to connect with you..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary cancel-modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Send Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Mentorship Request Modal -->
+<div id="mentorship-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Request Mentorship</h2>
+        <form id="mentorship-request-form"
+              action="#"
+          method="POST">
+
+            {% csrf_token %}
+            <input type="hidden" id="mentor-id" name="mentor_id">
+            <div class="form-group">
+                <label for="interests">What are you hoping to learn?</label>
+                <textarea id="interests" name="interests" rows="4" placeholder="I'm interested in learning about..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="goals">Your mentorship goals:</label>
+                <textarea id="goals" name="goals" rows="4" placeholder="My goals for this mentorship are..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary cancel-modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Send Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -25,6 +25,7 @@
 
     <div id="create-event" class="tab-content active">
         <h2>Create New Event</h2>
+        {% if user and user.user_id %}
         <form action="{% url 'core:create_event' user.user_id %}" method="post" class="event-form">
             {% csrf_token %}
             
@@ -64,6 +65,11 @@
                 <input type="submit" value="Schedule Event" class="btn-primary">
             </div>
         </form>
+        {% else %}
+        <div class="alert alert-warning">
+            <p>You must be logged in to create an event. <a href="{% url 'core:signin' %}">Log in here</a></p>
+        </div>
+        {% endif %}
     </div>
 
     <div id="manage-events" class="tab-content">
@@ -98,7 +104,11 @@
             <div class="modal-content">
                 <span class="close-modal">&times;</span>
                 <h3>Update Event</h3>
-                <form id="update-event-form" action="{% url 'core:update_event' event.event_id|default:0 %}" method="post">
+                {% if event and event.event_id %}
+                <form id="update-event-form" action="{% url 'core:update_event' event.event_id %}" method="post">
+                {% else %}
+                <form id="update-event-form" action="#" method="post">
+                {% endif %}
                     {% csrf_token %}
                     <input type="hidden" id="update-event-id" name="event_id">
                     

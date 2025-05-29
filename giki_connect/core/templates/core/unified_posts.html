@@ -1,0 +1,570 @@
+{% extends "core/layout.html" %}
+{% load static %}
+
+{% block CSS %}
+<style>
+    .posts-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .create-post {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .create-post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-right: 15px;
+    }
+    
+    .post-form textarea {
+        width: 100%;
+        height: 100px;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        resize: none;
+        margin-bottom: 15px;
+    }
+    
+    .post-form-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .post-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    
+    .post-user {
+        display: flex;
+        align-items: center;
+    }
+    
+    .post-user-info {
+        margin-left: 15px;
+    }
+    
+    .post-user-name {
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    .post-timestamp {
+        font-size: 0.85rem;
+        color: var(--light-text);
+    }
+    
+    .post-actions {
+        position: relative;
+    }
+    
+    .post-actions-toggle {
+        cursor: pointer;
+        color: var(--light-text);
+    }
+    
+    .post-actions-menu {
+        position: absolute;
+        right: 0;
+        top: 25px;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        width: 150px;
+        display: none;
+        z-index: 10;
+    }
+    
+    .post-actions-menu.active {
+        display: block;
+    }
+    
+    .post-action-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: block;
+        text-decoration: none;
+        color: var(--text-color);
+    }
+    
+    .post-action-item:hover {
+        background-color: var(--accent-color);
+    }
+    
+    .post-content {
+        margin-bottom: 15px;
+    }
+    
+    .post-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 15px;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .post-stats {
+        display: flex;
+        color: var(--light-text);
+        font-size: 0.9rem;
+    }
+    
+    .post-stat {
+        margin-right: 15px;
+    }
+    
+    .post-reactions {
+        display: flex;
+    }
+    
+    .post-reaction {
+        margin-left: 20px;
+        color: var(--light-text);
+        cursor: pointer;
+        transition: color 0.3s;
+    }
+    
+    .post-reaction:hover, .post-reaction.active {
+        color: var(--primary-color);
+    }
+    
+    .comments-section {
+        margin-top: 15px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 15px;
+    }
+    
+    .comment {
+        display: flex;
+        margin-bottom: 15px;
+    }
+    
+    .comment-content {
+        background-color: var(--accent-color);
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-left: 15px;
+        position: relative;
+        flex: 1;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    
+    .comment-time {
+        font-size: 0.75rem;
+        color: var(--light-text);
+    }
+    
+    .comment-text {
+        margin-top: 5px;
+    }
+    
+    .new-comment {
+        display: flex;
+        margin-top: 15px;
+    }
+    
+    .new-comment-input {
+        flex: 1;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 8px 15px;
+        margin-left: 15px;
+    }
+    
+    .filters {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+    
+    .filter-options {
+        display: flex;
+    }
+    
+    .filter-option {
+        padding: 8px 15px;
+        border-radius: 20px;
+        margin-right: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .filter-option.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .search-box {
+        position: relative;
+    }
+    
+    .search-input {
+        padding: 8px 15px;
+        padding-left: 35px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--light-text);
+    }
+    
+    .view-selector {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    
+    .view-option {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .view-option.active {
+        border-bottom: 2px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .page-link {
+        margin: 0 5px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .page-link.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: var(--light-text);
+    }
+</style>
+{% endblock %}
+
+{% block JS %}
+<script>
+    // Toggle post actions menu
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle post action toggles
+        const actionToggles = document.querySelectorAll('.post-actions-toggle');
+        actionToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const menu = this.nextElementSibling;
+                menu.classList.toggle('active');
+            });
+        });
+        
+        // Close menus when clicking elsewhere
+        document.addEventListener('click', function() {
+            const menus = document.querySelectorAll('.post-actions-menu');
+            menus.forEach(menu => {
+                menu.classList.remove('active');
+            });
+        });
+        
+        // Toggle comments section
+        const commentButtons = document.querySelectorAll('.toggle-comments');
+        commentButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const postId = this.getAttribute('data-post-id');
+                const commentsSection = document.querySelector(`#comments-${postId}`);
+                
+                if (commentsSection.style.display === 'none' || !commentsSection.style.display) {
+                    commentsSection.style.display = 'block';
+                    this.querySelector('span').textContent = 'Hide Comments';
+                } else {
+                    commentsSection.style.display = 'none';
+                    this.querySelector('span').textContent = 'Show Comments';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="posts-container">
+    <!-- Page Title -->
+    <div class="filters">
+        <h1>
+            {% if profile_user %}
+                {{ profile_user.name }}'s Posts
+            {% elif post %}
+                Post Details
+            {% else %}
+                Recent Posts
+            {% endif %}
+        </h1>
+        
+        {% if not post %}
+        <!-- Search and Filter Options -->
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Search posts...">
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if not post %}
+    <!-- View Selector -->
+    <div class="view-selector">
+        <div class="view-option {% if not profile_user %}active{% endif %}">
+            <a href="{% url 'core:all-posts' %}" style="text-decoration: none; color: inherit;">
+                <i class="fas fa-globe"></i> All Posts
+            </a>
+        </div>
+        {% if user and user.user_id %}
+        <div class="view-option {% if profile_user and profile_user.user_id == user.user_id %}active{% endif %}">
+            <a href="{% url 'core:user-posts' user.user_id %}" style="text-decoration: none; color: inherit;">
+                <i class="fas fa-user"></i> My Posts
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Create Post Form -->
+    {% if user and user.user_id and not post %}
+    <div class="create-post">
+        <div class="create-post-header">
+            <div class="user-avatar">
+                {{ user.name|first }}
+            </div>
+            <h3>Create a Post</h3>
+        </div>
+        <form class="post-form" action="{% url 'core:create-post' user.user_id %}" method="POST">
+            {% csrf_token %}
+            <textarea name="content_text" placeholder="What's on your mind?"></textarea>
+            <div class="post-form-actions">
+                <button type="submit" class="btn btn-primary">Post</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    <!-- Single Post Detail View -->
+    {% if post %}
+    <div class="post-card" id="post-{{ post.post_id }}">
+        <div class="post-header">
+            <div class="post-user">
+                <div class="user-avatar">
+                    {{ post.author_name|first }}
+                </div>
+                <div class="post-user-info">
+                    {% if post.author_id %}
+                    <a href="{% url 'core:get_profile' post.author_id %}" class="post-user-name">{{ post.author_name }}</a>
+                    {% else %}
+                    <span class="post-user-name">{{ post.author_name }}</span>
+                    {% endif %}
+                    <div class="post-timestamp">{{ post.timestamp|date:"F j, Y, g:i a" }}</div>
+                </div>
+            </div>
+            
+            <div class="post-actions">
+                <div class="post-actions-toggle">
+                    <i class="fas fa-ellipsis-h"></i>
+                </div>
+                <div class="post-actions-menu">
+                    {% if user and user.user_id == post.author_id %}
+                    <a href="{% url 'core:delete-post' post.post_id user.user_id %}" class="post-action-item">
+                        <i class="fas fa-trash"></i> Delete Post
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'core:all-posts' %}" class="post-action-item">
+                        <i class="fas fa-arrow-left"></i> Back to Feed
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="post-content">
+            <p>{{ post.content_text }}</p>
+        </div>
+        
+        <div class="post-footer">
+            <div class="post-stats">
+                <div class="post-stat">{{ comment_count }} comments</div>
+            </div>
+        </div>
+        
+        <!-- Comments for single post view -->
+        <div class="comments-section">
+            <h4>Comments</h4>
+            {% for comment in comments %}
+            <div class="comment">
+                <div class="user-avatar" style="width: 30px; height: 30px; font-size: 14px;">
+                    {{ comment.author.name|first }}
+                </div>
+                <div class="comment-content">
+                    <div class="comment-author">{{ comment.author.name }}</div>
+                    <div class="comment-time">{{ comment.timestamp|timesince }} ago</div>
+                    <p class="comment-text">{{ comment.text }}</p>
+                    
+                    {% if user.user_id == comment.author.user_id %}
+                    <div style="position: absolute; top: 10px; right: 10px;">
+                        <form method="POST" action="{% url 'core:delete_comment' comment.comment_id user.user_id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" style="background: none; border: none; color: var(--light-text); cursor: pointer;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <p>No comments yet. Be the first to comment!</p>
+            </div>
+            {% endfor %}
+            
+            <!-- Add new comment -->
+            {% if user and user.user_id %}
+            <form method="POST" action="{% url 'core:add_comment' post.post_id user.user_id %}" class="new-comment">
+                {% csrf_token %}
+                <div class="user-avatar" style="width: 30px; height: 30px; font-size: 14px;">
+                    {{ user.name|first }}
+                </div>
+                <input type="text" name="text" class="new-comment-input" placeholder="Write a comment...">
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Multiple Posts List View -->
+    {% else %}
+        {% if posts %}
+            {% for post in posts %}
+            <div class="post-card" id="post-{{ post.post_id }}">
+                <div class="post-header">
+                    <div class="post-user">
+                        <div class="user-avatar">
+                            {{ post.author_name|first }}
+                        </div>
+                        <div class="post-user-info">
+                            {% if post.author_id %}
+                            <a href="{% url 'core:get_profile' post.author_id %}" class="post-user-name">{{ post.author_name }}</a>
+                            {% else %}
+                            <span class="post-user-name">{{ post.author_name }}</span>
+                            {% endif %}
+                            <div class="post-timestamp">{{ post.timestamp|date:"F j, Y, g:i a" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="post-actions">
+                        <div class="post-actions-toggle">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                        <div class="post-actions-menu">
+                            {% if user.user_id == post.author_id %}
+                            <a href="{% url 'core:delete-post' post.post_id user.user_id %}" class="post-action-item">
+                                <i class="fas fa-trash"></i> Delete Post
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'core:post-detail' post.post_id %}" class="post-action-item">
+                                <i class="fas fa-external-link-alt"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="post-content">
+                    <p>{{ post.content_text }}</p>
+                </div>
+                
+                <div class="post-footer">
+                    <div class="post-stats">
+                        <div class="post-stat">{{ post.comment_count }} comments</div>
+                    </div>
+                    <div class="post-reactions">
+                        <a href="{% url 'core:post-detail' post.post_id %}" class="post-reaction toggle-comments" data-post-id="{{ post.post_id }}">
+                            <i class="far fa-comment"></i> <span>View Details</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if posts.has_other_pages %}
+            <div class="pagination">
+                {% if posts.has_previous %}
+                    <a href="?page={{ posts.previous_page_number }}" class="page-link">&laquo; Previous</a>
+                {% endif %}
+                
+                {% for i in posts.paginator.page_range %}
+                    {% if posts.number == i %}
+                        <span class="page-link active">{{ i }}</span>
+                    {% else %}
+                        <a href="?page={{ i }}" class="page-link">{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if posts.has_next %}
+                    <a href="?page={{ posts.next_page_number }}" class="page-link">Next &raquo;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>No posts found. {% if user and user.user_id %}Create your first post above!{% endif %}</p>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %} 

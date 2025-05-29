@@ -183,230 +183,267 @@
 
 {% block body %}
 <div class="mentorship-container">
-    <h1>Mentorship Program</h1>
-    
-    <div class="mentorship-tabs">
-        <div class="mentorship-tab active" data-tab="available">Available Mentors</div>
-        <div class="mentorship-tab" data-tab="my-mentors">My Mentors</div>
-        <div class="mentorship-tab" data-tab="applications">My Applications</div>
-        {% if user.is_alumni %}
-        <div class="mentorship-tab" data-tab="mentees">My Mentees</div>
-        <div class="mentorship-tab" data-tab="requests">Mentorship Requests</div>
-        {% endif %}
-    </div>
-    
-    <!-- Available Mentors Tab -->
-    <div class="mentorship-content active" id="available">
-        {% if available_mentors %}
-            {% for mentor in available_mentors %}
-                <div class="card mentor-card">
-                    <div class="mentor-header">
-                        <div class="mentor-info">
-                            {% if mentor.profile.avatar %}
-                                <img src="{{ mentor.profile.avatar.url }}" alt="{{ mentor.username }}" class="mentor-avatar">
-                            {% else %}
-                                <div class="mentor-avatar">{{ mentor.username|first }}</div>
-                            {% endif %}
-                            <div>
-                                <h3 class="mentor-name">{{ mentor.username }}</h3>
-                                <p class="mentor-title">{{ mentor.profile.title }}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="mentor-stats">
-                            <div class="mentor-stat">
-                                <span class="mentor-stat-value">{{ mentor.mentees.count }}</span>
-                                <span class="mentor-stat-label">Mentees</span>
-                            </div>
-                            <div class="mentor-stat">
-                                <span class="mentor-stat-value">{{ mentor.experience_years }}</span>
-                                <span class="mentor-stat-label">Years Exp</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mentor-bio">
-                        <p>{{ mentor.profile.bio }}</p>
-                    </div>
-                    
-                    <div class="mentor-skills">
-                        {% for skill in mentor.profile.skills.all %}
-                            <span class="mentor-skill">{{ skill.name }}</span>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="mentor-actions">
-                        <a href="{% url 'core:get_profile' mentor.id %}" class="btn btn-outline">View Profile</a>
-                        {% if user and not user.is_alumni %}
-                            <form action="{% url 'core:apply_for_mentorship' mentor.id %}" method="POST">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-primary">Request Mentorship</button>
-                            </form>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <p>No mentors are available at the moment.</p>
-            </div>
-        {% endif %}
-    </div>
-    
-    <!-- My Mentors Tab -->
-    <div class="mentorship-content" id="my-mentors">
-        {% if my_mentors %}
-            {% for mentorship in my_mentors %}
-                <div class="card mentor-card">
-                    <div class="mentor-header">
-                        <div class="mentor-info">
-                            {% if mentorship.mentor.profile.avatar %}
-                                <img src="{{ mentorship.mentor.profile.avatar.url }}" alt="{{ mentorship.mentor.username }}" class="mentor-avatar">
-                            {% else %}
-                                <div class="mentor-avatar">{{ mentorship.mentor.username|first }}</div>
-                            {% endif %}
-                            <div>
-                                <h3 class="mentor-name">{{ mentorship.mentor.username }}</h3>
-                                <p class="mentor-title">{{ mentorship.mentor.profile.title }}</p>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <p>Since: {{ mentorship.created_at|date:"M d, Y" }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mentor-actions">
-                        <a href="{% url 'core:get_profile' mentorship.mentor.id %}" class="btn btn-outline">View Profile</a>
-                        <a href="{% url 'core:send_message' mentorship.mentor.id %}" class="btn btn-primary">Message</a>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <p>You don't have any active mentors.</p>
-            </div>
-        {% endif %}
-    </div>
-    
-    <!-- My Applications Tab -->
-    <div class="mentorship-content" id="applications">
-        {% if my_applications %}
-            {% for application in my_applications %}
-                <div class="application-card">
-                    <span class="application-status status-{{ application.status|lower }}">{{ application.status }}</span>
-                    <h3>Application to {{ application.mentor.username }}</h3>
-                    <p>Submitted: {{ application.created_at|date:"M d, Y" }}</p>
-                    
-                    {% if application.status == 'PENDING' %}
-                        <div class="application-actions">
-                            <form action="{% url 'core:withdraw_mentorship_application' application.mentor.id %}" method="POST">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-outline">Withdraw Application</button>
-                            </form>
-                        </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <p>You don't have any mentorship applications.</p>
-            </div>
-        {% endif %}
-    </div>
-    
+  <h1>Mentorship Program</h1>
+
+  <div class="mentorship-tabs">
+    <div class="mentorship-tab active" data-tab="available">Available Mentors</div>
+    <div class="mentorship-tab" data-tab="my-mentors">My Mentors</div>
+    <div class="mentorship-tab" data-tab="applications">My Applications</div>
     {% if user.is_alumni %}
-    <!-- My Mentees Tab -->
-    <div class="mentorship-content" id="mentees">
-        {% if my_mentees %}
-            {% for mentorship in my_mentees %}
-                <div class="card mentor-card">
-                    <div class="mentor-header">
-                        <div class="mentor-info">
-                            {% if mentorship.mentee.profile.avatar %}
-                                <img src="{{ mentorship.mentee.profile.avatar.url }}" alt="{{ mentorship.mentee.username }}" class="mentor-avatar">
-                            {% else %}
-                                <div class="mentor-avatar">{{ mentorship.mentee.username|first }}</div>
-                            {% endif %}
-                            <div>
-                                <h3 class="mentor-name">{{ mentorship.mentee.username }}</h3>
-                                <p class="mentor-title">{{ mentorship.mentee.profile.title }}</p>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <p>Since: {{ mentorship.created_at|date:"M d, Y" }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mentor-actions">
-                        <a href="{% url 'core:get_profile' mentorship.mentee.id %}" class="btn btn-outline">View Profile</a>
-                        <a href="{% url 'core:send_message' mentorship.mentee.id %}" class="btn btn-primary">Message</a>
-                        <form action="{% url 'core:update_mentorship_status' user.user_id mentorship.id %}" method="POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="status" value="ENDED">
-                            <button type="submit" class="btn btn-outline">End Mentorship</button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <p>You don't have any mentees at the moment.</p>
-            </div>
-        {% endif %}
-    </div>
-    
-    <!-- Mentorship Requests Tab -->
-    <div class="mentorship-content" id="requests">
-        {% if mentorship_requests %}
-            {% for request in mentorship_requests %}
-                <div class="application-card">
-                    <h3>Request from {{ request.student.username }}</h3>
-                    <p>Submitted: {{ request.created_at|date:"M d, Y" }}</p>
-                    
-                    <div class="application-actions">
-                        <form action="{% url 'core:accept_mentorship' user.user_id request.id %}" method="POST">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary">Accept</button>
-                        </form>
-                        <form action="{% url 'core:reject_mentorship' user.user_id request.id %}" method="POST">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-outline">Decline</button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <p>You don't have any pending mentorship requests.</p>
-            </div>
-        {% endif %}
-    </div>
+      <div class="mentorship-tab" data-tab="mentees">My Mentees</div>
+      <div class="mentorship-tab" data-tab="requests">Mentorship Requests</div>
     {% endif %}
+  </div>
+
+  <!-- Available Mentors -->
+  <div class="mentorship-content active" id="available">
+    {% if available_mentors %}
+      {% for mentor in available_mentors %}
+        <div class="card mentor-card">
+          <div class="mentor-header">
+            <div class="mentor-info">
+              {% if mentor.profile.avatar %}
+                <img src="{{ mentor.profile.avatar.url }}" alt="{{ mentor.username }}" class="mentor-avatar">
+              {% else %}
+                <div class="mentor-avatar">{{ mentor.username|first }}</div>
+              {% endif %}
+              <div>
+                <h3 class="mentor-name">{{ mentor.username }}</h3>
+                <p class="mentor-title">{{ mentor.profile.title }}</p>
+              </div>
+            </div>
+            <div class="mentor-stats">
+              <div class="mentor-stat">
+                <span class="mentor-stat-value">{{ mentor.mentees.count }}</span>
+                <span class="mentor-stat-label">Mentees</span>
+              </div>
+              <div class="mentor-stat">
+                <span class="mentor-stat-value">{{ mentor.experience_years }}</span>
+                <span class="mentor-stat-label">Years Exp</span>
+              </div>
+            </div>
+          </div>
+          <div class="mentor-bio">
+            <p>{{ mentor.profile.bio }}</p>
+          </div>
+          <div class="mentor-skills">
+            {% for skill in mentor.profile.skills.all %}
+              <span class="mentor-skill">{{ skill.name }}</span>
+            {% endfor %}
+          </div>
+          <div class="mentor-actions">
+            <a href="{% url 'core:get_profile' mentor.id %}" class="btn btn-outline">View Profile</a>
+            {% if not user.is_alumni %}
+              <button class="btn btn-primary open-mentorship-modal"
+                      data-target-id="{{ mentor.id }}">
+                Request Mentorship
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card">
+        <p>No mentors are available at the moment.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- My Mentors -->
+  <div class="mentorship-content" id="my-mentors">
+    {% if my_mentors %}
+      {% for ms in my_mentors %}
+        <div class="card mentor-card">
+          <div class="mentor-header">
+            <div class="mentor-info">
+              {% if ms.mentor.profile.avatar %}
+                <img src="{{ ms.mentor.profile.avatar.url }}" alt="{{ ms.mentor.username }}" class="mentor-avatar">
+              {% else %}
+                <div class="mentor-avatar">{{ ms.mentor.username|first }}</div>
+              {% endif %}
+              <div>
+                <h3 class="mentor-name">{{ ms.mentor.username }}</h3>
+                <p class="mentor-title">{{ ms.mentor.profile.title }}</p>
+              </div>
+            </div>
+            <div>
+              <p>Since: {{ ms.created_at|date:"M d, Y" }}</p>
+            </div>
+          </div>
+          <div class="mentor-actions">
+            <a href="{% url 'core:get_profile' ms.mentor.id %}" class="btn btn-outline">View Profile</a>
+            <button class="btn btn-primary open-message-modal"
+                    data-target-id="{{ ms.message_thread_id }}">
+              Message
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card"><p>You don't have any active mentors.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- My Applications -->
+  <div class="mentorship-content" id="applications">
+    {% if my_applications %}
+      {% for app in my_applications %}
+        <div class="application-card">
+          <span class="application-status status-{{ app.status|lower }}">{{ app.status }}</span>
+          <h3>Application to {{ app.mentor.username }}</h3>
+          <p>Submitted: {{ app.created_at|date:"M d, Y" }}</p>
+          {% if app.status == 'PENDING' %}
+            <div class="application-actions">
+              <form action="{% url 'core:withdraw_mentorship_application' app.mentor.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline">Withdraw</button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card"><p>You don't have any mentorship applications.</p></div>
+    {% endif %}
+  </div>
+
+  {% if user.is_alumni %}
+    <!-- My Mentees -->
+    <div class="mentorship-content" id="mentees">
+      {% if my_mentees %}
+        {% for ms in my_mentees %}
+          <div class="card mentor-card">
+            <div class="mentor-header">
+              <div class="mentor-info">
+                {% if ms.mentee.profile.avatar %}
+                  <img src="{{ ms.mentee.profile.avatar.url }}" alt="{{ ms.mentee.username }}" class="mentor-avatar">
+                {% else %}
+                  <div class="mentor-avatar">{{ ms.mentee.username|first }}</div>
+                {% endif %}
+                <div>
+                  <h3 class="mentor-name">{{ ms.mentee.username }}</h3>
+                  <p class="mentor-title">{{ ms.mentee.profile.title }}</p>
+                </div>
+              </div>
+              <div>
+                <p>Since: {{ ms.created_at|date:"M d, Y" }}</p>
+              </div>
+            </div>
+            <div class="mentor-actions">
+              <a href="{% url 'core:get_profile' ms.mentee.id %}" class="btn btn-outline">View Profile</a>
+              <button class="btn btn-primary open-message-modal"
+                      data-target-id="{{ ms.message_thread_id }}">
+                Message
+              </button>
+              <form action="{% url 'core:update_mentorship_status' user.user_id ms.id %}"
+                    method="post" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="ENDED">
+                <button type="submit" class="btn btn-outline">End Mentorship</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="card"><p>You don't have any mentees yet.</p></div>
+      {% endif %}
+    </div>
+
+    <!-- Mentorship Requests -->
+    <div class="mentorship-content" id="requests">
+      {% if mentorship_requests %}
+        {% for req in mentorship_requests %}
+          <div class="application-card">
+            <h3>Request from {{ req.student.username }}</h3>
+            <p>Submitted: {{ req.created_at|date:"M d, Y" }}</p>
+            <div class="application-actions">
+              <form action="{% url 'core:accept_mentorship' user.user_id req.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Accept</button>
+              </form>
+              <form action="{% url 'core:reject_mentorship' user.user_id req.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline">Decline</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="card"><p>No pending mentorship requests.</p></div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<!-- Mentorship Modal (Request) -->
+<div id="mentorship-modal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Request Mentorship</h2>
+    <form id="mentorship-request-form" action="#" method="post">
+      {% csrf_token %}
+      <input type="hidden" id="mentor-id" name="mentor_id" value="">
+      <div class="form-group">
+        <label for="mentorship-note">Personal Note (optional):</label>
+        <textarea id="mentorship-note"
+                  name="message"
+                  rows="4"
+                  placeholder="Why do you want this mentor?"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary cancel-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Send Request</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
 {% block JS %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tab switching functionality
-        const tabs = document.querySelectorAll('.mentorship-tab');
-        const contents = document.querySelectorAll('.mentorship-content');
-        
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                
-                // Remove active class from all tabs and contents
-                tabs.forEach(t => t.classList.remove('active'));
-                contents.forEach(c => c.classList.remove('active'));
-                
-                // Add active class to current tab and content
-                this.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
-            });
-        });
+document.addEventListener('DOMContentLoaded', () => {
+  // Tab switching
+  const tabs    = document.querySelectorAll('.mentorship-tab');
+  const panes   = document.querySelectorAll('.mentorship-content');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panes.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
     });
+  });
+
+  const currentUserId = '{{ user.user_id }}';
+
+  // ----- Mentorship Request Modal -----
+  const modal      = document.getElementById('mentorship-modal');
+  const openBtns   = document.querySelectorAll('.open-mentorship-modal');
+  const closeBtns  = modal.querySelectorAll('.close, .cancel-modal');
+  const form       = document.getElementById('mentorship-request-form');
+  const mentorInpt = document.getElementById('mentor-id');
+
+  openBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mentorId = btn.dataset.targetId;
+      mentorInpt.value = mentorId;
+      form.action = `/api/mentorship/send/${currentUserId}/${mentorId}/`;
+      modal.style.display = 'block';
+    });
+  });
+  closeBtns.forEach(b => b.addEventListener('click', () => modal.style.display = 'none'));
+  window.addEventListener('click', e => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+
+  // ----- Message Modal (reuse your existing) -----
+  const msgOpenBtns = document.querySelectorAll('.open-message-modal');
+  msgOpenBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const threadId = btn.dataset.targetId;
+      window.location.href = `/messages/view/${threadId}/`;
+    });
+  });
+});
 </script>
-{% endblock %} 
+{% endblock %}

@@ -23,6 +23,20 @@
 <form action="{% url 'core:signup' %}" method="post">
     {% csrf_token %}
 
+    {% if prefill %}
+  {% with p=prefill %}
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('name').value  = "{{ p.name }}";
+        document.getElementById('email').value = "{{ p.email }}";
+        document.getElementById('role').value  = "{{ p.role }}";
+        // you can likewise pre‑select student/alumnus fields if you like
+      });
+    </script>
+  {% endwith %}
+{% endif %}
+
+
     <!-- Display any form errors -->
     {% if errors %}
     <div class="form-errors">

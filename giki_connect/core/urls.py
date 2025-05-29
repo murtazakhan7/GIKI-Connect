@@ -5,7 +5,7 @@ from .views import ( NotificationAPI, StudentMentorshipAPI, AlumniMentorshipAPI,
                     ManageConnectionRequestAPI, ViewReceivedRequestsAPI, ViewConnectionsAPI, GroupMessageView, ListGroupsView, 
                     CreateGroupView, JoinGroupView, MakeModeratorView, KickMemberView, ApprovedGroupsView, ApproveRequestView,  
                     CreatePostView, AllPostsView, UserPostsView, PostDetailView, DeletePostView, CommentAPI, PostCommentsAPI, 
-                    SendConnectionRequestAPI, ManageConnectionRequestAPI, SignInView )
+                    SignInView )
 
 app_name = 'core'
 
@@ -58,10 +58,18 @@ urlpatterns = [
     path('connections/manage/<int:request_id>/', ManageConnectionRequestAPI.as_view(), name='manage_connection_request'),
     path('connections/received/<int:receiver_id>/', ViewReceivedRequestsAPI.as_view(), name='view_received_requests'),
     path('connections/list/<int:user_id>/', ViewConnectionsAPI.as_view(), name='view_all_connections'),
+    path('connections/cancel/<int:sender_id>/<int:receiver_id>/', SendConnectionRequestAPI.as_view(), name='cancel_connection_request'),
+    path('connections/remove/<int:user1_id>/<int:user2_id>/', ViewConnectionsAPI.as_view(), name='remove_connection'),
     
     # Message endpoints - CHECK
     path('messages/<int:user_id>/', MessageView.as_view(), name='list_messages'),  # List of users user can talk to
-    path('messages/send/<int:message_id>/<int:user_id>/', SendMessageView.as_view(), name='send_message'),  # Add new message to chat
+    # path('messages/send/<int:message_id>/<int:user_id>/', SendMessageView.as_view(), name='send_message'),
+    #   # Add new message to chat
+    path(
+        'api/messages/send/<int:message_id>/',
+        SendMessageView.as_view(),
+        name='send_message'
+    ),
     path('messages/view/<int:message_id>/', ViewMessage.as_view(), name='view_message'),  # View full conversation
 
     # Job post endpoints - CHECK

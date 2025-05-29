@@ -3,6 +3,11 @@
 
 {% block CSS %}
 <link rel="stylesheet" href="{% static 'core/profile.css' %}">
+<style>
+    .profile-info{
+        color: black;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
@@ -57,9 +62,9 @@
                 {% endif %}
                 <div class="info-item">
                     <span class="label">Skills:</span>
-                    <div class="skills-list">
-                        {% for skill in profile.skills.all %}
-                        <span class="skill-tag">{{ skill.name }}</span>
+                    <div style="color: black;" class="skills-list">
+                        {% for skill in profile.skills %}
+                        <span class="skill-tag">{{ skill }}</span>
                         {% empty %}
                         <span class="no-data">No skills added yet</span>
                         {% endfor %}
@@ -88,22 +93,24 @@
             </div>
             {% endif %}
             
-            {% if user.user_id != profile.user.user_id %}
+            {% if user.user_id != profile.user_id %}
             <div class="profile-section">
                 <div class="info-item">
                     {% if is_connected %}
-                    <p>You are connected with {{ profile.user.name }}</p>
+                    <p>You are connected with {{ profile.name }}</p>
                     <form action="{% url 'core:remove_connection' user.user_id profile.user.user_id %}" method="POST">
                         {% csrf_token %}
+                        <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn btn-outline">Remove Connection</button>
                     </form>
                     {% elif connection_pending %}
                     <p>Connection request pending</p>
                     <form action="{% url 'core:cancel_connection_request' user.user_id profile.user.user_id %}" method="POST">
                         {% csrf_token %}
+                        <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn btn-outline">Cancel Request</button>
                     </form>
-                    {% else %}
+                    {% elif user.user_id and profile.user.user_id %}
                     <form action="{% url 'core:send_connection_request' user.user_id profile.user.user_id %}" method="POST">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary">Connect</button>
@@ -144,23 +151,26 @@
             <div class="quick-links">
                 <h2>Quick Links</h2>
                 <ul>
+                    {% if profile.user and profile.user.user_id %}
                     <li>
                         <a href="{% url 'core:user-posts' profile.user.user_id %}">
                             <i class="fas fa-file-alt"></i> View Posts
                         </a>
                     </li>
-                    {% if user.user_id == profile.user.user_id %}
+                    {% endif %}
+                    
+                    {% if user.user_id and user.user_id == profile.user.user_id %}
                     <li>
-                        <a href="{% url 'core:view_all_connections' profile.user.user_id %}">
+                        <a href="{% url 'core:view_all_connections' user.user_id %}">
                             <i class="fas fa-users"></i> Manage Connections
                         </a>
                     </li>
                     <li>
-                        <a href="{% url 'core:list_messages' profile.user.user_id %}">
+                        <a href="{% url 'core:list_messages' user.user_id %}">
                             <i class="fas fa-envelope"></i> Messages
                         </a>
                     </li>
-                    {% else %}
+                    {% elif profile.user and profile.user.user_id %}
                     <li>
                         <a href="{% url 'core:send_message' profile.user.user_id %}">
                             <i class="fas fa-paper-plane"></i> Send Message
